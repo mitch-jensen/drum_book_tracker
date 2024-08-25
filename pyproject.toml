@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "django>=5.1",
+    "pytest-asyncio>=0.24.0",
 ]
 
 [build-system]
@@ -25,3 +26,4 @@ dev-dependencies = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+asyncio_mode = "auto"
