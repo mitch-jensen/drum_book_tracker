@@ -22,8 +22,25 @@
 				"christian-kohler.path-intellisense",
 				"donjayamanne.githistory",
 				"batisteo.vscode-django",
-				"njpwerner.autodocstring"
-			]
+				"njpwerner.autodocstring",
+				"ms-azuretools.vscode-docker",
+				"DavidAnson.vscode-markdownlint"
+			],
+			"settings": {
+				"[python]": {
+					"diffEditor.ignoreTrimWhitespace": false,
+					"editor.formatOnType": true,
+					"editor.formatOnSave": true,
+					"editor.wordBasedSuggestions": "off",
+					"editor.codeActionsOnSave": {
+						"source.fixAll": "explicit",
+						"source.convertImportFormat": "always",
+						"source.fixAll.pylance": "explicit",
+						"source.organizeImports": "always",
+						"source.unusedImports": "always"
+					}
+				}
+			}
 		}
 	}
 
