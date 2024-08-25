@@ -1,5 +1,5 @@
 import pytest
-from book_tracker.models import Author, Book, Section, Exercise
+from book_tracker.models import Author, Book, Section, Exercise, Tag
 
 
 @pytest.mark.django_db
@@ -30,3 +30,10 @@ async def test_create_exercise():
         section=section, title="Exercise 1", exercise_number=1
     )
     assert exercise.title == "Exercise 1"
+
+
+@pytest.mark.django_db
+async def test_create_tag():
+    tag = await Tag.objects.acreate(name="Paradiddles")
+    assert tag.name == "Paradiddles"
+    assert await Tag.objects.acount() == 1
