@@ -65,10 +65,12 @@ class PracticeLog(models.Model):
     tempo = models.IntegerField()
     notes = models.TextField(blank=True)
     difficulty = models.CharField(
+        max_length=10,
         choices=Difficulty.choices,
         default=Difficulty.NOT_RATED
     )
     relaxation_level = models.CharField(
+        max_length=12,
         choices=RelaxationLevel.choices,
         default=RelaxationLevel.NOT_RECORDED
     )
