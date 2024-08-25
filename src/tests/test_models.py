@@ -1,5 +1,6 @@
 import pytest
-from book_tracker.models import Author, Book
+from book_tracker.models import Author, Book, Section
+
 
 @pytest.mark.django_db
 async def test_create_author():
@@ -7,8 +8,15 @@ async def test_create_author():
     assert author.first_name == "George"
     assert author.last_name == "Stone"
 
+
 @pytest.mark.django_db
 async def test_create_book():
     book = await Book.objects.acreate(title="Stick Control")
     book.title == "Stick Control"
-    
+
+
+@pytest.mark.django_db
+async def test_create_section():
+    book = await Book.objects.acreate(title="Stick Control")
+    section = await Section.objects.acreate(book=book, title="Chapter 1", order=1)
+    assert section.title == "Chapter 1"
