@@ -65,6 +65,16 @@
 			"source": "virtual-environment",
 			"target": "/workspaces/.venv",
 			"type": "volume"
+		},
+		{
+			"source": "pytest-cache",
+			"target": "/workspaces/.pytest_cache",
+			"type": "volume"
+		},
+		{
+			"source": "ruff-cache",
+			"target": "/workspaces/.ruff_cache",
+			"type": "volume"
 		}
 	],
 	// Features to add to the dev container. More info: https://containers.dev/features.
