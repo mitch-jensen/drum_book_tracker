@@ -24,7 +24,8 @@
 				"batisteo.vscode-django",
 				"njpwerner.autodocstring",
 				"ms-azuretools.vscode-docker",
-				"DavidAnson.vscode-markdownlint"
+				"DavidAnson.vscode-markdownlint",
+				"GitHub.vscode-github-actions"
 			],
 			"settings": {
 				"[python]": {
