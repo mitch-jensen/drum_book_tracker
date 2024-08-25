@@ -43,12 +43,24 @@ class Section(models.Model):
         return f"<Section(id={self.id}, title={self.title}, book={self.book.title}, order={self.order})>"
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __repr__(self):
+        return f"<Tag(id={self.id}, name={self.name})>"
+
+    def __str__(self):
+        return self.name
+
+
 class Exercise(models.Model):
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE, related_name="exercises"
     )
     title = models.CharField(max_length=255)
     exercise_number = models.PositiveSmallIntegerField()
+    tags = models.ManyToManyField(Tag, related_name="exercises", blank=True)
+    page_number = models.IntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [
