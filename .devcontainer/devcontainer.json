@@ -28,6 +28,10 @@
 			],
 			"settings": {
 				"[python]": {
+				"python.defaultInterpreterPath": "/workspaces/.venv/bin/python3",
+				"python.testing.pytestEnabled": true,
+				"python.testing.unittestEnabled": false,
+				"python.testing.pytestArgs": ["src"],
 					"diffEditor.ignoreTrimWhitespace": false,
 					"editor.formatOnType": true,
 					"editor.formatOnSave": true,
