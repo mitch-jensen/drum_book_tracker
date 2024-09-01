@@ -9,6 +9,7 @@ dependencies = [
     "pytest-asyncio>=0.24.0",
     "django-dbbackup>=4.2.1",
     "python-dotenv>=1.0.1",
+    "django-taggit>=6.0.0",
 ]
 
 [build-system]
@@ -23,9 +24,13 @@ dev-dependencies = [
     "ruff>=0.6.2",
     "pre-commit>=3.8.0",
     "pytest-django>=4.8.0",
+    "bandit[toml]>=1.7.9",
 ]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 asyncio_mode = "auto"
+
+[tool.bandit.assert_used]
+skips = ['*_test.py', '*/test_*.py']

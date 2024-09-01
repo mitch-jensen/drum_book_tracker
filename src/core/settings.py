@@ -41,11 +41,14 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "dbbackup",
+    "taggit",
     "book_tracker",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
 DBBACKUP_STORAGE_OPTIONS = {"location": "/workspace/db_backups/"}
+
+TAGGIT_CASE_INSENSITIVE = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

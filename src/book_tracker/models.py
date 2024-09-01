@@ -1,4 +1,5 @@
 from django.db import models
+from taggit.managers import TaggableManager
 
 
 class Author(models.Model):
@@ -22,6 +23,7 @@ class Author(models.Model):
 class Book(models.Model):
     title = models.CharField(max_length=255)
     authors = models.ManyToManyField(Author, related_name="books")
+    tags = TaggableManager()
 
     def __str__(self) -> str:
         return self.title
@@ -35,6 +37,7 @@ class Section(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="sections")
     title = models.CharField(max_length=255)
     order = models.IntegerField()
+    tags = TaggableManager()
 
     class Meta:
         constraints = [
@@ -50,23 +53,13 @@ class Section(models.Model):
         return f"<Section(id={self.id}, title={self.title}, book={self.book.title}, order={self.order})>"
 
 
-class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-
-    def __repr__(self):
-        return f"<Tag(id={self.id}, name={self.name})>"
-
-    def __str__(self):
-        return self.name
-
-
 class Exercise(models.Model):
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE, related_name="exercises"
     )
     title = models.CharField(max_length=255)
     exercise_number = models.PositiveSmallIntegerField()
-    tags = models.ManyToManyField(Tag, related_name="exercises", blank=True)
+    tags = TaggableManager()
     page_number = models.IntegerField(null=True, blank=True)
 
     class Meta:

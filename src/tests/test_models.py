@@ -1,5 +1,6 @@
 import pytest
-from book_tracker.models import Author, Book, Section, Exercise, Tag
+from book_tracker.models import Author, Book, Section, Exercise
+from asgiref.sync import sync_to_async
 
 
 @pytest.mark.django_db
@@ -34,6 +35,6 @@ async def test_create_exercise():
 
 @pytest.mark.django_db
 async def test_create_tag():
-    tag = await Tag.objects.acreate(name="Paradiddles")
-    assert tag.name == "Paradiddles"
-    assert await Tag.objects.acount() == 1
+    book = await Book.objects.acreate(title="Stick Control")
+    await sync_to_async(book.tags.add)("Paradiddles")
+    assert await book.tags.acount() == 1
