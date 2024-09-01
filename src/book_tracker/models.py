@@ -5,6 +5,13 @@ class Author(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["first_name", "last_name"], name="unique_name"
+            )
+        ]
+
     def __repr__(self):
         return f"<Author(id={self.id}, name={self.first_name} {self.last_name})>"
 
