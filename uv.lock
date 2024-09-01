@@ -80,6 +80,15 @@ wheels = [
 ]
 
 [[package]]
+name = "django-grappelli"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/b5/f3f48797ac4829d0cbf648f33dcffeb2801742b3464225e685d4f9537261/django-grappelli-4.0.1.tar.gz", hash = "sha256:5095c8b6cef3f471a7876e30e8ac5b8cfbee30f999a4fba9e5ee26bf6addc5e4", size = 11062540 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/30/ca6b76f0583a0d1c957ad049d5669d0fc43d7c62d727ab1e23bad2b9b8f5/django_grappelli-4.0.1-py2.py3-none-any.whl", hash = "sha256:35cdf82d509ac4c3a19ca7252a78be8b3b60686d4f2976c488c6d5f1dd3bdc85", size = 1823475 },
+]
+
+[[package]]
 name = "django-taggit"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -98,6 +107,7 @@ source = { editable = "." }
 dependencies = [
     { name = "django" },
     { name = "django-dbbackup" },
+    { name = "django-grappelli" },
     { name = "django-taggit" },
     { name = "pytest-asyncio" },
     { name = "python-dotenv" },
@@ -115,6 +125,7 @@ dev = [
 requires-dist = [
     { name = "django", specifier = ">=5.1" },
     { name = "django-dbbackup", specifier = ">=4.2.1" },
+    { name = "django-grappelli" },
     { name = "django-taggit", specifier = ">=6.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
@@ -122,7 +133,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bandit", extras = ["toml"] },
+    { name = "bandit", extras = ["toml"], specifier = ">=1.7.9" },
     { name = "pre-commit", specifier = ">=3.8.0" },
     { name = "pytest-django", specifier = ">=4.8.0" },
     { name = "ruff", specifier = ">=0.6.2" },

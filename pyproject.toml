@@ -10,6 +10,7 @@ dependencies = [
     "django-dbbackup>=4.2.1",
     "python-dotenv>=1.0.1",
     "django-taggit>=6.0.0",
+    "django-grappelli>=4.0.1",
 ]
 
 [build-system]
