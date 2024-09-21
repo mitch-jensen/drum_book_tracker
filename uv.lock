@@ -154,7 +154,7 @@ requires-dist = [
     { name = "django", specifier = ">=5.1" },
     { name = "django-dbbackup", specifier = ">=4.2.1" },
     { name = "django-grappelli", specifier = ">=4.0.1" },
-    { name = "django-structlog" },
+    { name = "django-structlog", specifier = ">=8.1.0" },
     { name = "django-taggit", specifier = ">=6.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },

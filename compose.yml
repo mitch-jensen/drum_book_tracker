@@ -1,0 +1,26 @@
+services:
+  django:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: development
+    ports:
+      - 8000
+    volumes:
+      - pre_commit_cache:/root/.cache/pre-commit
+      - pip_cache:/root/.cache/pip
+      - .:/workspace:cached
+    tty: true
+  db:
+    image: postgres:alpine
+    env_file:
+      - .env.db
+    ports:
+      - 5432
+    volumes:
+      - db_data:/var/lib/postgresql/data\
+
+volumes:
+  pre_commit_cache:
+  pip_cache:
+  db_data:

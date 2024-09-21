@@ -1,13 +1,10 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
-	"name": "Existing Dockerfile",
-	"build": {
-		// Sets the run context to one level up instead of the .devcontainer folder.
-		"context": "..",
-		// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
-		"dockerfile": "../Dockerfile"
-	},
+	"name": "Dev Container",
+	"dockerComposeFile": "../compose.yml",
+	"workspaceFolder": "/workspace",
+	"service": "django",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {},
 		"ghcr.io/devcontainers/features/git:1": {},
@@ -29,6 +26,23 @@
 				"GitHub.vscode-github-actions"
 			],
 			"settings": {
+				"launch": {
+					"version": "0.2.0",
+					"configurations": [
+						{
+							"name": "Python Debugger: Django",
+							"type": "debugpy",
+							"request": "launch",
+							"args": [
+								"runserver"
+							],
+							"django": true,
+							"autoStartBrowser": false,
+							"program": "${workspaceFolder}/src/manage.py"
+						}
+					],
+					"compounds": []
+				},
 				"[python]": {
 					"python.defaultInterpreterPath": "/workspaces/.venv/bin/python3",
 					"python.testing.pytestEnabled": true,
@@ -51,40 +65,14 @@
 			}
 		}
 	},
-	"mounts": [
-		{
-			"source": "pre-commit-cache",
-			"target": "/root/.cache/pre-commit",
-			"type": "volume"
-		},
-		{
-			"source": "pip-cache",
-			"target": "/root/.cache/pip",
-			"type": "volume"
-		},
-		{
-			"source": "virtual-environment",
-			"target": "/workspaces/.venv",
-			"type": "volume"
-		},
-		{
-			"source": "pytest-cache",
-			"target": "/workspaces/.pytest_cache",
-			"type": "volume"
-		},
-		{
-			"source": "ruff-cache",
-			"target": "/workspaces/.ruff_cache",
-			"type": "volume"
-		}
-	],
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Uncomment the next line to run commands after the container is created.
-	"postCreateCommand": "uv sync && uv run pre-commit install"
+	"postCreateCommand": "git config --global --add safe.directory /workspace && uv sync && uv run pre-commit install",
 	// Configure tool-specific properties.
 	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
+	"remoteUser": "root",
+	"containerUser": "root"
 }

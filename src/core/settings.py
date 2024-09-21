@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 import os
 
@@ -87,10 +87,18 @@ ASGI_APPLICATION = "core.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+db_config = {
+    **dotenv_values(".env.db"),
+}
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": db_config["POSTGRES_DB"],
+        "USER": db_config["POSTGRES_USER"],
+        "PASSWORD": db_config["POSTGRES_PASSWORD"],
+        "HOST": "db",
+        "PORT": "5432",
     }
 }
 
@@ -136,14 +144,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-LOGGING = {
-    "version": 1,
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
-    "loggers": {
-        "": ""
-    }
-}
