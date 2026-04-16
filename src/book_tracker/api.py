@@ -9,8 +9,6 @@ from ninja.pagination import LimitOffsetPagination, paginate
 
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 from book_tracker.schemas import (
-    DIFFICULTY_TO_INT,
-    RELAXATION_TO_INT,
     AuthorIn,
     AuthorOut,
     AuthorUpdate,
@@ -297,11 +295,7 @@ async def get_practice_log(request: HttpRequest, practice_log_id: uuid.UUID) -> 
 
 @practice_logs_router.post("/", response={201: PracticeLogOut})
 async def create_practice_log(request: HttpRequest, payload: PracticeLogIn) -> tuple[int, PracticeLog]:
-    data = payload.model_dump()
-    data["difficulty"] = DIFFICULTY_TO_INT[data["difficulty"]]
-    data["relaxation_level"] = RELAXATION_TO_INT[data["relaxation_level"]]
-    if data["practiced_on"] is None:
-        del data["practiced_on"]
+    data = payload.model_dump(exclude_unset=True)
     log = await PracticeLog.objects.acreate(**data)
     return 201, log
 
@@ -309,12 +303,7 @@ async def create_practice_log(request: HttpRequest, payload: PracticeLogIn) -> t
 @practice_logs_router.patch("/{practice_log_id}", response=PracticeLogOut)
 async def update_practice_log(request: HttpRequest, practice_log_id: uuid.UUID, payload: PracticeLogUpdate) -> PracticeLog:
     log = await aget_object_or_404(PracticeLog, pk=practice_log_id)
-    data = payload.model_dump(exclude_unset=True)
-    if "difficulty" in data:
-        data["difficulty"] = DIFFICULTY_TO_INT[data["difficulty"]]
-    if "relaxation_level" in data:
-        data["relaxation_level"] = RELAXATION_TO_INT[data["relaxation_level"]]
-    for attr, value in data.items():
+    for attr, value in payload.model_dump(exclude_unset=True).items():
         setattr(log, attr, value)
     await log.asave()
     return log
