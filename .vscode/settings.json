@@ -1,0 +1,12 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.convertImportFormat": "always",
+        "source.convertImportStar": "always",
+        "source.fixAll": "always",
+        "source.renameShadowedStdlibImports": "always",
+        "source.sort.json": "always",
+        "source.unusedImports": "always"
+    },
+    "editor.formatOnSave": true,
+    "python.analysis.typeCheckingMode": "strict"
+}
