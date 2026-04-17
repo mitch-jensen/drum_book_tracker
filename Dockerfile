@@ -1,6 +1,6 @@
 FROM python:3.14-alpine AS requirements
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.5.21 /uv /uvx /bin/
 WORKDIR /requirements
 RUN --mount=type=bind,source=pyproject.toml,target=/requirements/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/requirements/uv.lock \
