@@ -1,7 +1,6 @@
 import uuid  # noqa: TC003
-from typing import ClassVar
 
-from ninja import ModelSchema
+from ninja import Field, ModelSchema
 
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 
@@ -98,7 +97,7 @@ class TagUpdate(ModelSchema):
 
 class ExerciseIn(ModelSchema):
     section_id: uuid.UUID
-    tag_ids: ClassVar[list[uuid.UUID]] = []
+    tag_ids: list[uuid.UUID] = Field(default_factory=list)
 
     class Meta:  # noqa: D106
         model = Exercise
