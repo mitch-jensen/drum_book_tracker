@@ -16,4 +16,4 @@ RUN --mount=type=bind,from=requirements,source=/requirements/requirements.txt,ta
 COPY ./src /app/src
 WORKDIR /app/src
 
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && python -m uvicorn core.asgi:application --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && exec python -m uvicorn core.asgi:application --host 0.0.0.0 --port 8000"]
