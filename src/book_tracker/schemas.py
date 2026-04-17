@@ -1,11 +1,9 @@
-from typing import TYPE_CHECKING
+import uuid  # noqa: TC003
+from typing import ClassVar
 
 from ninja import ModelSchema
 
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
-
-if TYPE_CHECKING:
-    import uuid
 
 
 class AuthorIn(ModelSchema):
@@ -43,7 +41,7 @@ class BookOut(ModelSchema):
         fields = ("id", "title", "page_count")
 
     @staticmethod
-    def resolve_authors(obj: Book) -> list[Author]:
+    def resolve_authors(obj: Book) -> list[Author]:  # noqa: D102
         return list(obj.authors.all())
 
 
@@ -100,7 +98,7 @@ class TagUpdate(ModelSchema):
 
 class ExerciseIn(ModelSchema):
     section_id: uuid.UUID
-    tag_ids: list[uuid.UUID] = []
+    tag_ids: ClassVar[list[uuid.UUID]] = []
 
     class Meta:  # noqa: D106
         model = Exercise
@@ -116,7 +114,7 @@ class ExerciseOut(ModelSchema):
         fields = ("id", "title", "exercise_number", "page_number")
 
     @staticmethod
-    def resolve_tags(obj: Exercise) -> list[Tag]:
+    def resolve_tags(obj: Exercise) -> list[Tag]:  # noqa: D102
         return list(obj.tags.all())
 
 
