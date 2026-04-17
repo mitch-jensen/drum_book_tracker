@@ -7,20 +7,29 @@ requires-python = ">=3.14"
 dependencies = [
     "django>=6.0.4",
     "django-ninja>=1.6.2",
+    "django-stubs-ext>=6.0.2",
+    "psycopg[binary,pool]>=3.3.3",
+    "uvicorn>=0.44.0",
 ]
 
 [dependency-groups]
 dev = [
-    "django-stubs-ext>=6.0.2",
     "django-types>=0.23.0",
     "identify>=2.6.18",
     "pre-commit>=4.5.1",
     "ruff>=0.15.10",
 ]
-test = ["pytest>=9.0.3", "pytest-django>=4.12.0"]
+test = ["factory-boy>=3.3.3", "pytest>=9.0.3", "pytest-django>=4.12.0"]
 
 [tool.pyright]
-exclude = ["src/manage.py", "src/book_tracker/migrations/**"]
+exclude = [
+    "src/manage.py",
+    "src/book_tracker/migrations/**",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+]
 
 [tool.ruff]
 target-version = "py314"
@@ -29,13 +38,27 @@ line-length = 180
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D103", "D104", "D105"]
+ignore = ["D100", "D101", "D103", "D104", "D105"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "src/tests/**/*.py" = [
     # at least this three should be fine in tests:
-    "S101", # asserts allowed in tests...
-    "ARG",  # Unused function args -> fixtures nevertheless are functionally relevant...
-    "FBT",  # Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+    "S101",    # asserts allowed in tests...
+    "ARG",     # Unused function args -> fixtures nevertheless are functionally relevant...
+    "FBT",     # Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+    "PLR2004", # Magic values in assertions are acceptable in tests.
+    "DTZ011",  # datetime.date.today() is acceptable in test data setup/assertions.
+    "SLF001",  # Accessing private members like _meta is acceptable for model metadata assertions.
+    "D102",    # Docstrings for test functions are not necessary.
+    "D106",    # Docstrings for test classes are not necessary.
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings"
+pythonpath = ["src"]
+
+[tool.bandit]
+exclude_dirs = ["src/tests"]
+tests = ["B201", "B301"]
+skips = ["B101", "B601"]
