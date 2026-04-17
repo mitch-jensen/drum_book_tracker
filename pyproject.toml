@@ -50,6 +50,8 @@ fixable = ["ALL"]
     "PLR2004", # Magic values in assertions are acceptable in tests.
     "DTZ011",  # datetime.date.today() is acceptable in test data setup/assertions.
     "SLF001",  # Accessing private members like _meta is acceptable for model metadata assertions.
+    "D102",    # Docstrings for test functions are not necessary.
+    "D106",    # Docstrings for test classes are not necessary.
 ]
 
 [tool.pytest.ini_options]
