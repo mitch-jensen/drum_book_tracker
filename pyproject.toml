@@ -17,7 +17,7 @@ dev = [
     "django-types>=0.23.0",
     "identify>=2.6.18",
     "pre-commit>=4.5.1",
-    "ruff>=0.15.10",
+    "ruff>=0.15.11",
 ]
 test = ["factory-boy>=3.3.3", "pytest>=9.0.3", "pytest-django>=4.12.0"]
 
