@@ -20,11 +20,14 @@ def author_create(request: HttpRequest) -> HttpResponse:
     if form.is_valid():
         form.save()
         authors = Author.objects.order_by("last_name", "first_name")
-        return render(
+        response = render(
             request,
             "book_tracker/authors.html#author-list",
             {"authors": authors, "form": AuthorForm()},
         )
+        response["HX-Retarget"] = "#author-list-container"
+        response["HX-Reswap"] = "innerHTML"
+        return response
     return render(request, "book_tracker/authors.html#author-form", {"form": form})
 
 

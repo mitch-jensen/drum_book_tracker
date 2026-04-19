@@ -35,12 +35,14 @@
         </tbody>
     </table>
 
-    {% partialdef author-form inline %}
-    <form hx-post="{% url 'author-create' %}" hx-target="#author-list-container" hx-swap="innerHTML">
-        {{ form.as_p }}
-        <button type="submit">Add Author</button>
-    </form>
-    {% endpartialdef author-form %}
+    <div id="author-form-container">
+        {% partialdef author-form inline %}
+        <form hx-post="{% url 'author-create' %}" hx-target="#author-form-container" hx-swap="innerHTML">
+            {{ form.as_p }}
+            <button type="submit">Add Author</button>
+        </form>
+        {% endpartialdef author-form %}
+    </div>
     {% endpartialdef author-list %}
 </div>
 {% endblock %}
