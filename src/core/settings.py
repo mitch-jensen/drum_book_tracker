@@ -43,7 +43,12 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.staticfiles",
     "book_tracker",
     "django_htmx",
+    "crispy_forms",
+    "crispy_bootstrap5",
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE: list[str] = [
     "django.middleware.security.SecurityMiddleware",
