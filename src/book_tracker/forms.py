@@ -1,3 +1,5 @@
+from typing import Any
+
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
 from django import forms
@@ -10,8 +12,8 @@ class AuthorForm(forms.ModelForm):
         model = Author
         fields = ("first_name", "last_name")
 
-    def __init__(self, *args: object, **kwargs: object) -> None:  # noqa: D107
-        super().__init__(*args, **kwargs)  # pyright: ignore[reportArgumentType]
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
+        super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout("first_name", "last_name")
