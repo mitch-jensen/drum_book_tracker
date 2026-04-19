@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "django>=6.0.4",
+    "django-htmx>=1.27.0",
     "django-ninja>=1.6.2",
     "django-stubs-ext>=6.0.3",
     "psycopg[binary,pool]>=3.3.3",
@@ -14,6 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "debugpy>=1.8.20",
     "django-types>=0.23.0",
     "identify>=2.6.19",
     "pre-commit>=4.5.1",
