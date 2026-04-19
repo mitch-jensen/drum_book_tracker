@@ -9,7 +9,7 @@
     {% htmx_script %}
 </head>
 
-<body hx-headers="{'X-CSRFToken': '{{ csrf_token }}'}">
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <header>
         <nav>
             <a href="{% url 'author-list' %}">Authors</a>
