@@ -1,0 +1,47 @@
+---
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_DB: drum_book_tracker
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version-file: pyproject.toml
+
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --all-groups
+
+      - name: Run tests
+        run: uv run pytest
+        env:
+          SECRET_KEY: "ci-dummy-key" # pragma: allowlist secret
+          DATABASE_NAME: "drum_book_tracker"
+          DATABASE_USER: "postgres"
+          DATABASE_PASSWORD: "postgres" # pragma: allowlist secret
+          DATABASE_HOST: "localhost"
+          DATABASE_PORT: "5432"

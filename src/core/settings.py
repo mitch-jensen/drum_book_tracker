@@ -86,7 +86,6 @@ DATABASES = {
         "PASSWORD": os.environ["DATABASE_PASSWORD"],
         "HOST": os.environ["DATABASE_HOST"],
         "PORT": os.environ.get("DATABASE_PORT", "5432"),
-        "CONN_MAX_AGE": None,
         "OPTIONS": {
             "pool": True,
             "server_side_binding": True,
