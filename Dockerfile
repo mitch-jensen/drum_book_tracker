@@ -17,3 +17,21 @@ COPY ./src /app/src
 WORKDIR /app/src
 
 CMD ["sh", "-c", "python manage.py collectstatic --noinput && exec python -m uvicorn core.asgi:application --host 0.0.0.0 --port 8000"]
+
+FROM python:3.14-alpine AS development
+# Use the system Python environment
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/" \
+    UV_LINK_MODE=copy
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+RUN --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --all-groups
+
+COPY ./src /app/src
+WORKDIR /app/src
+
+CMD [ "python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "manage.py", "runserver", "0.0.0.0:8000" ]

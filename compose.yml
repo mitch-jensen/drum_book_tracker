@@ -1,16 +1,5 @@
 ---
 services:
-  caddy:
-    image: caddy:2.11.2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    volumes:
-      - ./caddy:/etc/caddy:ro
-      - static:/srv/static
-    depends_on:
-      backend:
-        condition: service_started
   backend:
     build:
       context: .
@@ -23,8 +12,6 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       DATABASE_HOST: db
       DATABASE_PORT: 5432
-    volumes:
-      - static:/app/src/staticfiles
     depends_on:
       db:
         condition: service_healthy
@@ -45,5 +32,4 @@ services:
       timeout: 5s
       retries: 5
 volumes:
-  static:
   db_data:

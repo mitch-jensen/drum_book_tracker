@@ -1,0 +1,22 @@
+---
+services:
+  caddy:
+    image: caddy:2.11.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - static:/srv/static
+    depends_on:
+      backend:
+        condition: service_started
+  backend:
+    build:
+      target: production
+    expose:
+      - "8000"
+    volumes:
+      - static:/app/src/staticfiles
+volumes:
+  static:

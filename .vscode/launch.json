@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "django": true,
+            "name": "Python Debugger: Remote Attach",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/src",
+                    "remoteRoot": "/app/src"
+                }
+            ],
+            "request": "attach",
+            "type": "debugpy"
+        }
+    ],
+    "version": "0.2.0"
+}
