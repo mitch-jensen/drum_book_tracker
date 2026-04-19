@@ -1,7 +1,7 @@
 ---
 name: Test
 
-on:
+"on":
   push:
     branches:
       - main
@@ -16,7 +16,7 @@ jobs:
         env:
           POSTGRES_DB: drum_book_tracker
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+          POSTGRES_PASSWORD: postgres  # pragma: allowlist secret
         options: >-
           --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
@@ -39,9 +39,9 @@ jobs:
       - name: Run tests
         run: uv run pytest
         env:
-          SECRET_KEY: "ci-dummy-key" # pragma: allowlist secret
+          SECRET_KEY: "ci-dummy-key"  # pragma: allowlist secret
           DATABASE_NAME: "drum_book_tracker"
           DATABASE_USER: "postgres"
-          DATABASE_PASSWORD: "postgres" # pragma: allowlist secret
+          DATABASE_PASSWORD: "postgres"  # pragma: allowlist secret
           DATABASE_HOST: "localhost"
           DATABASE_PORT: "5432"
