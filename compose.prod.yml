@@ -4,7 +4,7 @@ services:
     image: caddy:2.11.2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"
     volumes:
       - ./caddy:/etc/caddy:ro
       - static:/srv/static
@@ -14,8 +14,6 @@ services:
   backend:
     build:
       target: production
-    expose:
-      - "8000"
     volumes:
       - static:/app/src/staticfiles
 volumes:
