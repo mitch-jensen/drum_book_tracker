@@ -1,6 +1,5 @@
-
 ---
-name: Build
+name: Test
 
 on:
   push:
