@@ -19,3 +19,5 @@ jobs:
         uses: docker/bake-action@v7.1.0
         with:
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
