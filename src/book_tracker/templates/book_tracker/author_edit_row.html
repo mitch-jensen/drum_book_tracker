@@ -1,0 +1,10 @@
+<tr id="author-{{ author.id }}">
+    <td>{{ form.first_name }}</td>
+    <td>{{ form.last_name }}</td>
+    <td>
+        <button hx-post="{% url 'author-update' author.id %}" hx-target="#author-{{ author.id }}" hx-swap="outerHTML"
+            hx-include="closest tr">Save</button>
+        <button hx-get="{% url 'author-row' author.id %}" hx-target="#author-{{ author.id }}"
+            hx-swap="outerHTML">Cancel</button>
+    </td>
+</tr>
