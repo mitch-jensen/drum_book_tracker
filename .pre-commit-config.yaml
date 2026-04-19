@@ -47,6 +47,10 @@ repos:
         exclude: (conftest|factories)\.py$
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: no-commit-to-branch
+        args:
+          - "--branch"
+          - "main"
   - repo: https://github.com/google/yamlfmt
     rev: v0.21.0
     hooks:
