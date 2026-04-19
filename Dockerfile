@@ -2,6 +2,7 @@ FROM python:3.14-alpine AS requirements
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /requirements
+# hadolint ignore=SC2094
 RUN --mount=type=bind,source=pyproject.toml,target=/requirements/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/requirements/uv.lock \
     uv export --no-dev --format requirements.txt > requirements.txt
