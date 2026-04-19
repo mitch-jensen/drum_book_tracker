@@ -16,7 +16,7 @@ class HtmxHttpRequest(HttpRequest):
 def require_htmx(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
     @functools.wraps(view)
     def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        if not hasattr(request, "htmx"):
+        if not request.htmx:  # type: ignore[union-attr]
             return HttpResponseBadRequest()
         return view(request, *args, **kwargs)
 
