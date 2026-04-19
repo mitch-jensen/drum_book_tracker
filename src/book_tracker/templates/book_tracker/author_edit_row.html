@@ -1,14 +1,16 @@
 <tr id="author-{{ author.id }}">
     <td>
-        {{ form.first_name }}
+        <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
+            class="form-control form-control-sm{% if form.first_name.errors %} is-invalid{% endif %}">
         {% for error in form.first_name.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
+        <div class="invalid-feedback">{{ error }}</div>
         {% endfor %}
     </td>
     <td>
-        {{ form.last_name }}
+        <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}"
+            class="form-control form-control-sm{% if form.last_name.errors %} is-invalid{% endif %}">
         {% for error in form.last_name.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
+        <div class="invalid-feedback">{{ error }}</div>
         {% endfor %}
     </td>
     <td class="text-end">
