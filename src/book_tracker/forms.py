@@ -32,4 +32,7 @@ class BookForm(forms.ModelForm):
         self.helper.form_tag = False
         self.helper.layout = Layout("title", "page_count", "authors")
         for field in self.fields.values():
-            field.widget.attrs.setdefault("class", "form-control")
+            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+                field.widget.attrs.setdefault("class", "form-select")
+            else:
+                field.widget.attrs.setdefault("class", "form-control")

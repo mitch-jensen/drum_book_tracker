@@ -117,5 +117,6 @@ def book_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     form = BookForm(request.POST, instance=book)
     if form.is_valid():
         form.save()
+        book = Book.objects.prefetch_related("authors").get(pk=pk)
         return render(request, "book_tracker/books.html#book-row", {"book": book})
     return render(request, "book_tracker/book_edit_row.html", {"book": book, "form": form})

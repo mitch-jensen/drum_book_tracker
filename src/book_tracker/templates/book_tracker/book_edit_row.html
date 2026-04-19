@@ -17,7 +17,8 @@
         <select name="authors" multiple
             class="form-select form-select-sm{% if form.authors.errors %} is-invalid{% endif %}">
             {% for value, label in form.authors.field.choices %}
-            <option value="{{ value }}" {% if value in form.authors.value %}selected{% endif %}>{{ label }}</option>
+            <option value="{{ value }}" {% if value|stringformat:"s" in form.authors.value %}selected{% endif %}>{{
+                label }}</option>
             {% endfor %}
         </select>
         {% for error in form.authors.errors %}
