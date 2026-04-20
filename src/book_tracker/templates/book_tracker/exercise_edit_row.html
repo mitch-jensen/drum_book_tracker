@@ -2,9 +2,7 @@
     <td>
         <select name="section" class="form-select form-select-sm{% if form.section.errors %} is-invalid{% endif %}">
             {% for value, label in form.section.field.choices %}
-            <option value="{{ value }}" {% if value|stringformat:"s"==form.section.value|stringformat:"s" %}selected{%
-                endif %}>{{
-                label }}</option>
+            <option value="{{ value }}" {% if value|stringformat:"s" == form.section.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
         {% for error in form.section.errors %}
@@ -35,8 +33,7 @@
     <td>
         <select name="tags" multiple class="form-select form-select-sm{% if form.tags.errors %} is-invalid{% endif %}">
             {% for value, label in form.tags.field.choices %}
-            <option value="{{ value }}" {% if value|stringformat:"s" in form.tags.value %}selected{% endif %}>{{
-                label }}</option>
+            <option value="{{ value }}" {% if value|stringformat:"s" in form.tags.value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
         {% for error in form.tags.errors %}

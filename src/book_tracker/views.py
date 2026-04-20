@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -249,6 +250,31 @@ def exercise_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
         exercise = Exercise.objects.select_related("section__book").prefetch_related("tags").get(pk=pk)
         return render(request, "book_tracker/exercises.html#exercise-row", {"exercise": exercise})
     return render(request, "book_tracker/exercise_edit_row.html", {"exercise": exercise, "form": form})
+
+
+@require_GET
+def exercise_detail(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    exercise = get_object_or_404(
+        Exercise.objects.select_related("section__book").prefetch_related("tags"),
+        pk=pk,
+    )
+    stats = exercise.practice_logs.aggregate(
+        practice_count=Count("id"),
+        min_tempo=Min("tempo"),
+        max_tempo=Max("tempo"),
+        avg_tempo=Avg("tempo"),
+        first_practiced=Min("practiced_on"),
+        most_recent_practice=Max("practiced_on"),
+        avg_difficulty=Avg("difficulty", filter=Q(difficulty__gt=0)),
+        avg_relaxation=Avg("relaxation_level", filter=Q(relaxation_level__gt=0)),
+    )
+    last_log = exercise.practice_logs.order_by("-practiced_on", "-pk").first()
+    recent_logs = exercise.practice_logs.order_by("-practiced_on", "-pk")[:10]
+    return render(
+        request,
+        "book_tracker/exercise_detail.html",
+        {"exercise": exercise, "stats": stats, "last_log": last_log, "recent_logs": recent_logs},
+    )
 
 
 # --- PracticeLog views ---

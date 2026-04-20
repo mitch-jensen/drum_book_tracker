@@ -146,6 +146,26 @@ class Exercise(models.Model):
         most_recent_log = self.practice_logs.order_by("-practiced_on").first()
         return most_recent_log.difficulty if most_recent_log else None
 
+    def last_practiced_relaxation_level(self) -> int | None:
+        """Return the relaxation level of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.relaxation_level if most_recent_log else None
+
+    def average_difficulty(self) -> float:
+        """Return the average difficulty across all practice logs, excluding NOT_RATED."""
+        result = self.practice_logs.filter(difficulty__gt=0).aggregate(avg=models.Avg("difficulty"))
+        return result["avg"] or 0.0
+
+    def average_relaxation_level(self) -> float:
+        """Return the average relaxation level across all practice logs, excluding NOT_RECORDED."""
+        result = self.practice_logs.filter(relaxation_level__gt=0).aggregate(avg=models.Avg("relaxation_level"))
+        return result["avg"] or 0.0
+
+    def first_practiced(self) -> datetime.date | None:
+        """Return the date of the earliest practice log for this exercise."""
+        earliest_log = self.practice_logs.order_by("practiced_on").first()
+        return earliest_log.practiced_on if earliest_log else None
+
 
 class PracticeLog(models.Model):
     """Drum book practice log."""
