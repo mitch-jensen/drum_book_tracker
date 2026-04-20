@@ -108,6 +108,44 @@ class Exercise(models.Model):
     def __str__(self) -> str:
         return f"{self.section.book.title} - {self.title}"
 
+    def tempi_practiced(self) -> list[int]:
+        """Return a list of tempi practiced for this exercise."""
+        return list(self.practice_logs.values_list("tempo", flat=True))
+
+    def minimum_tempo(self) -> int:
+        """Return the minimum tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return min(tempi) if tempi else 0
+
+    def average_tempo(self) -> float:
+        """Return the average tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return sum(tempi) / len(tempi) if tempi else 0.0
+
+    def maximum_tempo(self) -> int:
+        """Return the maximum tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return max(tempi) if tempi else 0
+
+    def most_recent_practice(self) -> datetime.date | None:
+        """Return the date of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.practiced_on if most_recent_log else None
+
+    def practice_count(self) -> int:
+        """Return the total number of practice logs for this exercise."""
+        return self.practice_logs.count()
+
+    def last_practiced_tempo(self) -> int | None:
+        """Return the tempo of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.tempo if most_recent_log else None
+
+    def last_practiced_difficulty(self) -> int | None:
+        """Return the difficulty rating of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.difficulty if most_recent_log else None
+
 
 class PracticeLog(models.Model):
     """Drum book practice log."""
