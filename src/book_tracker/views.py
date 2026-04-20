@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from django.db.models import Avg, Count, Max, Min, Q
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -10,6 +9,8 @@ from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
+    from django.http import HttpResponse
+
     from core.htmx import HtmxHttpRequest
 
 
@@ -304,7 +305,7 @@ def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] 
         if rs_int > re_int:
             errors.append(f"Page range {i}: 'from' ({rs_int}) must be ≤ 'to' ({re_int}).")
         elif rs_int < start or re_int > end:
-            errors.append(f"Page range {i}: range {rs_int}–{re_int} is outside exercises {start}–{end}.")
+            errors.append(f"Page range {i}: range {rs_int}-{re_int} is outside exercises {start}-{end}.")
         elif rp_int < 1:
             errors.append(f"Page range {i}: page number must be positive.")
         else:
@@ -318,7 +319,7 @@ def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] 
     for i in range(len(parsed) - 1):
         if parsed[i][1] >= parsed[i + 1][0]:
             errors.append(
-                f"Page ranges overlap: {parsed[i][0]}–{parsed[i][1]} and {parsed[i + 1][0]}–{parsed[i + 1][1]}.",
+                f"Page ranges overlap: {parsed[i][0]}-{parsed[i][1]} and {parsed[i + 1][0]}-{parsed[i + 1][1]}.",
             )
 
     if errors:
