@@ -1,0 +1,67 @@
+<tr id="log-{{ log.id }}">
+    <td>
+        <select name="exercise" class="form-select form-select-sm{% if form.exercise.errors %} is-invalid{% endif %}">
+            {% for value, label in form.exercise.field.choices %}
+            <option value="{{ value }}" {% if value|stringformat:"s"==form.exercise.value|stringformat:"s" %}selected{%
+                endif %}>{{
+                label }}</option>
+            {% endfor %}
+        </select>
+        {% for error in form.exercise.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <input type="date" name="practiced_on" value="{{ form.practiced_on.value|default:'' }}"
+            class="form-control form-control-sm{% if form.practiced_on.errors %} is-invalid{% endif %}">
+        {% for error in form.practiced_on.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <input type="number" name="tempo" value="{{ form.tempo.value|default:'' }}"
+            class="form-control form-control-sm{% if form.tempo.errors %} is-invalid{% endif %}" min="0">
+        {% for error in form.tempo.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <select name="difficulty"
+            class="form-select form-select-sm{% if form.difficulty.errors %} is-invalid{% endif %}">
+            {% for value, label in form.difficulty.field.choices %}
+            <option value="{{ value }}" {% if value|stringformat:"s"==form.difficulty.value|stringformat:"s"
+                %}selected{% endif %}>{{
+                label }}</option>
+            {% endfor %}
+        </select>
+        {% for error in form.difficulty.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <select name="relaxation_level"
+            class="form-select form-select-sm{% if form.relaxation_level.errors %} is-invalid{% endif %}">
+            {% for value, label in form.relaxation_level.field.choices %}
+            <option value="{{ value }}" {% if value|stringformat:"s"==form.relaxation_level.value|stringformat:"s"
+                %}selected{% endif %}>{{
+                label }}</option>
+            {% endfor %}
+        </select>
+        {% for error in form.relaxation_level.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <textarea name="notes" rows="1"
+            class="form-control form-control-sm{% if form.notes.errors %} is-invalid{% endif %}">{{ form.notes.value|default:'' }}</textarea>
+        {% for error in form.notes.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-success" hx-post="{% url 'log-update' log.id %}" hx-target="#log-{{ log.id }}"
+            hx-swap="outerHTML" hx-include="closest tr">Save</button>
+        <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'log-row' log.id %}"
+            hx-target="#log-{{ log.id }}" hx-swap="outerHTML">Cancel</button>
+    </td>
+</tr>

@@ -1,0 +1,52 @@
+<tr id="exercise-{{ exercise.id }}">
+    <td>
+        <select name="section" class="form-select form-select-sm{% if form.section.errors %} is-invalid{% endif %}">
+            {% for value, label in form.section.field.choices %}
+            <option value="{{ value }}" {% if value|stringformat:"s"==form.section.value|stringformat:"s" %}selected{%
+                endif %}>{{
+                label }}</option>
+            {% endfor %}
+        </select>
+        {% for error in form.section.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <input type="text" name="title" value="{{ form.title.value|default:'' }}"
+            class="form-control form-control-sm{% if form.title.errors %} is-invalid{% endif %}">
+        {% for error in form.title.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <input type="number" name="exercise_number" value="{{ form.exercise_number.value|default:'' }}"
+            class="form-control form-control-sm{% if form.exercise_number.errors %} is-invalid{% endif %}" min="0">
+        {% for error in form.exercise_number.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <input type="number" name="page_number" value="{{ form.page_number.value|default:'' }}"
+            class="form-control form-control-sm{% if form.page_number.errors %} is-invalid{% endif %}" min="0">
+        {% for error in form.page_number.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <select name="tags" multiple class="form-select form-select-sm{% if form.tags.errors %} is-invalid{% endif %}">
+            {% for value, label in form.tags.field.choices %}
+            <option value="{{ value }}" {% if value|stringformat:"s" in form.tags.value %}selected{% endif %}>{{
+                label }}</option>
+            {% endfor %}
+        </select>
+        {% for error in form.tags.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-success" hx-post="{% url 'exercise-update' exercise.id %}"
+            hx-target="#exercise-{{ exercise.id }}" hx-swap="outerHTML" hx-include="closest tr">Save</button>
+        <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'exercise-row' exercise.id %}"
+            hx-target="#exercise-{{ exercise.id }}" hx-swap="outerHTML">Cancel</button>
+    </td>
+</tr>
