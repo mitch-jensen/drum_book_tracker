@@ -1,16 +1,15 @@
 from typing import TYPE_CHECKING
 
 from django.db.models import Avg, Count, Max, Min, Q
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
-from book_tracker.forms import AuthorForm, BookForm, ExerciseForm, PracticeLogForm, SectionForm
+from book_tracker.forms import AuthorForm, BookForm, BulkExerciseCreateForm, ExerciseForm, PracticeLogForm, SectionForm
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
-    from django.http import HttpResponse
-
     from core.htmx import HtmxHttpRequest
 
 
@@ -189,7 +188,7 @@ def exercise_list(request: HtmxHttpRequest) -> HttpResponse:
         .order_by(
             "section__book__title",
             "section__order",
-            "exercise_number",
+            "identifier",
         )
     )
     form = ExerciseForm()
@@ -208,7 +207,7 @@ def exercise_create(request: HtmxHttpRequest) -> HttpResponse:
             .order_by(
                 "section__book__title",
                 "section__order",
-                "exercise_number",
+                "identifier",
             )
         )
         response = render(
@@ -277,6 +276,125 @@ def exercise_detail(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     )
 
 
+def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] | list[str]:
+    """Parse and validate page range rows from POST data.
+
+    Returns a dict mapping exercise number → page number on success,
+    or a list of error messages on failure.
+    """
+    range_starts = post_data.getlist("range_start")
+    range_ends = post_data.getlist("range_end")
+    range_pages = post_data.getlist("range_page")
+
+    if not range_starts:
+        return ["At least one page range is required."]
+
+    errors: list[str] = []
+    parsed: list[tuple[int, int, int]] = []
+
+    for i, (rs, re_, rp) in enumerate(zip(range_starts, range_ends, range_pages, strict=False), 1):
+        if not rs or not re_ or not rp:
+            errors.append(f"Page range {i}: all fields are required.")
+            continue
+        try:
+            rs_int, re_int, rp_int = int(rs), int(re_), int(rp)
+        except ValueError:
+            errors.append(f"Page range {i}: values must be integers.")
+            continue
+        if rs_int > re_int:
+            errors.append(f"Page range {i}: 'from' ({rs_int}) must be ≤ 'to' ({re_int}).")
+        elif rs_int < start or re_int > end:
+            errors.append(f"Page range {i}: range {rs_int}–{re_int} is outside exercises {start}–{end}.")
+        elif rp_int < 1:
+            errors.append(f"Page range {i}: page number must be positive.")
+        else:
+            parsed.append((rs_int, re_int, rp_int))
+
+    if errors:
+        return errors
+
+    # Check for overlaps
+    parsed.sort()
+    for i in range(len(parsed) - 1):
+        if parsed[i][1] >= parsed[i + 1][0]:
+            errors.append(
+                f"Page ranges overlap: {parsed[i][0]}–{parsed[i][1]} and {parsed[i + 1][0]}–{parsed[i + 1][1]}.",
+            )
+
+    if errors:
+        return errors
+
+    # Check full coverage
+    covered: set[int] = set()
+    page_lookup: dict[int, int] = {}
+    for rs_int, re_int, rp_int in parsed:
+        for n in range(rs_int, re_int + 1):
+            covered.add(n)
+            page_lookup[n] = rp_int
+
+    expected = set(range(start, end + 1))
+    missing = expected - covered
+    if missing:
+        sorted_missing = sorted(missing)
+        errors.append(f"Page ranges do not cover exercises: {', '.join(str(m) for m in sorted_missing)}.")
+        return errors
+
+    return page_lookup
+
+
+def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = BulkExerciseCreateForm(request.POST)
+        page_range_errors: list[str] = []
+
+        if form.is_valid():
+            section = form.cleaned_data["section"]
+            start = form.cleaned_data["start"]
+            end = form.cleaned_data["end"]
+            tags = form.cleaned_data["tags"]
+
+            result = _parse_page_ranges(request.POST, start, end)
+            if isinstance(result, list):
+                page_range_errors = result
+            else:
+                page_lookup = result
+                exercises = Exercise.objects.bulk_create(
+                    [Exercise(section=section, identifier=str(i), page_number=page_lookup[i]) for i in range(start, end + 1)],
+                )
+                if tags:
+                    through_model = Exercise.tags.through
+                    through_objects = [through_model(exercise_id=exercise.pk, tag_id=tag.pk) for exercise in exercises for tag in tags]
+                    through_model.objects.bulk_create(through_objects)
+                return redirect("exercise-list")
+
+        # Re-render with errors — preserve page range rows from POST data
+        range_starts = request.POST.getlist("range_start")
+        range_ends = request.POST.getlist("range_end")
+        range_pages = request.POST.getlist("range_page")
+        page_ranges = list(zip(range_starts, range_ends, range_pages, strict=False))
+        if not page_ranges:
+            page_ranges = [("", "", "")]
+
+        return render(
+            request,
+            "book_tracker/exercise_bulk_create.html",
+            {"form": form, "page_ranges": page_ranges, "page_range_errors": page_range_errors},
+        )
+
+    form = BulkExerciseCreateForm()
+    return render(
+        request,
+        "book_tracker/exercise_bulk_create.html",
+        {"form": form, "page_ranges": [("", "", "")]},
+    )
+
+
+@require_GET
+@require_htmx
+def page_range_row(request: HtmxHttpRequest) -> HttpResponse:
+    return render(request, "book_tracker/page_range_row.html")
+
+
 # --- PracticeLog views ---
 
 
@@ -287,7 +405,7 @@ def section_options(request: HtmxHttpRequest) -> HttpResponse:
     exercise_target = request.GET.get("exercise_target", "id_exercise")
     if book_id:
         sections = Section.objects.filter(book_id=book_id).order_by("order")
-        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "exercise_number")
+        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "identifier")
     else:
         sections = Section.objects.none()
         exercises = Exercise.objects.none()
@@ -303,7 +421,7 @@ def section_options(request: HtmxHttpRequest) -> HttpResponse:
 def exercise_options(request: HtmxHttpRequest) -> HttpResponse:
     book_id = request.GET.get("book")
     if book_id:
-        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "exercise_number")
+        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "identifier")
         section_id = request.GET.get("section")
         if section_id:
             exercises = exercises.filter(section_id=section_id)

@@ -1,34 +1,32 @@
 <tr id="section-{{ section.id }}">
     <td>
-        <select name="book" class="form-select form-select-sm{% if form.book.errors %} is-invalid{% endif %}">
-            {% for value, label in form.book.field.choices %}
-            <option value="{{ value }}" {% if value|stringformat:"s"==form.book.value|stringformat:"s" %}selected{%
-                endif %}>{{
-                label }}</option>
-            {% endfor %}
-        </select>
-        {% for error in form.book.errors %}
-        <div class="invalid-feedback">{{ error }}</div>
-        {% endfor %}
+        {{ form.book }}
+        {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </td>
     <td>
-        <input type="text" name="title" value="{{ form.title.value|default:'' }}"
-            class="form-control form-control-sm{% if form.title.errors %} is-invalid{% endif %}">
-        {% for error in form.title.errors %}
-        <div class="invalid-feedback">{{ error }}</div>
-        {% endfor %}
+        <input type="text"
+               name="title"
+               value="{{ form.title.value|default:'' }}"
+               class="form-control form-control-sm{% if form.title.errors %} is-invalid{% endif %}">
+        {% for error in form.title.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
     </td>
     <td>
-        <input type="number" name="order" value="{{ form.order.value|default:'' }}"
-            class="form-control form-control-sm{% if form.order.errors %} is-invalid{% endif %}" min="0">
-        {% for error in form.order.errors %}
-        <div class="invalid-feedback">{{ error }}</div>
-        {% endfor %}
+        <input type="number"
+               name="order"
+               value="{{ form.order.value|default:'' }}"
+               class="form-control form-control-sm{% if form.order.errors %} is-invalid{% endif %}"
+               min="0">
+        {% for error in form.order.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
     </td>
     <td class="text-end">
-        <button class="btn btn-sm btn-success" hx-post="{% url 'section-update' section.id %}"
-            hx-target="#section-{{ section.id }}" hx-swap="outerHTML" hx-include="closest tr">Save</button>
-        <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'section-row' section.id %}"
-            hx-target="#section-{{ section.id }}" hx-swap="outerHTML">Cancel</button>
+        <button class="btn btn-sm btn-success"
+                hx-post="{% url 'section-update' section.id %}"
+                hx-target="#section-{{ section.id }}"
+                hx-swap="outerHTML"
+                hx-include="closest tr">Save</button>
+        <button class="btn btn-sm btn-outline-secondary"
+                hx-get="{% url 'section-row' section.id %}"
+                hx-target="#section-{{ section.id }}"
+                hx-swap="outerHTML">Cancel</button>
     </td>
 </tr>

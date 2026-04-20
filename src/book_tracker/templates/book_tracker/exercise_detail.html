@@ -1,136 +1,167 @@
 {% extends "base.html" %}
-
-{% block title %}{{ exercise.title }} - Drum Book Tracker{% endblock %}
-
+{% block title %}
+    {{ exercise }} - Drum Book Tracker
+{% endblock title %}
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'exercise-list' %}">Exercises</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ exercise.title }}</li>
-    </ol>
-</nav>
-
-<h1 class="mb-4">{{ exercise.title }}</h1>
-
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Exercise Info</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Book</dt>
-                    <dd class="col-sm-8">{{ exercise.section.book.title }}</dd>
-                    <dt class="col-sm-4">Section</dt>
-                    <dd class="col-sm-8">{{ exercise.section.title }}</dd>
-                    <dt class="col-sm-4">Exercise #</dt>
-                    <dd class="col-sm-8">{{ exercise.exercise_number }}</dd>
-                    <dt class="col-sm-4">Page</dt>
-                    <dd class="col-sm-8">{{ exercise.page_number|default:"—" }}</dd>
-                    <dt class="col-sm-4">Tags</dt>
-                    <dd class="col-sm-8">{{ exercise.tags.all|join:", "|default:"—" }}</dd>
-                </dl>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'exercise-list' %}">Exercises</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ exercise }}</li>
+        </ol>
+    </nav>
+    <h1 class="mb-4">{{ exercise }}</h1>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Exercise Info</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Book</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.section.book.title }}
+                        </dd>
+                        <dt class="col-sm-4">Section</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.section.title }}
+                        </dd>
+                        <dt class="col-sm-4">Identifier</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.identifier|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.description|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Page</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.page_number|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Tags</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.tags.all|join:", "|default:"—" }}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Practice Summary</div>
+                <div class="card-body">
+                    {% if stats.practice_count %}
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Times Practiced</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.practice_count }}
+                            </dd>
+                            <dt class="col-sm-6">First Practiced</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.first_practiced }}
+                            </dd>
+                            <dt class="col-sm-6">Most Recent</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.most_recent_practice }}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p class="text-muted mb-0">No practice logs yet.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Practice Summary</div>
-            <div class="card-body">
-                {% if stats.practice_count %}
-                <dl class="row mb-0">
-                    <dt class="col-sm-6">Times Practiced</dt>
-                    <dd class="col-sm-6">{{ stats.practice_count }}</dd>
-                    <dt class="col-sm-6">First Practiced</dt>
-                    <dd class="col-sm-6">{{ stats.first_practiced }}</dd>
-                    <dt class="col-sm-6">Most Recent</dt>
-                    <dd class="col-sm-6">{{ stats.most_recent_practice }}</dd>
-                </dl>
-                {% else %}
-                <p class="text-muted mb-0">No practice logs yet.</p>
-                {% endif %}
+    {% if stats.practice_count %}
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Tempo</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Min</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.min_tempo }} BPM
+                            </dd>
+                            <dt class="col-sm-6">Avg</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.avg_tempo|floatformat:1 }} BPM
+                            </dd>
+                            <dt class="col-sm-6">Max</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.max_tempo }} BPM
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Last Session</div>
+                    <div class="card-body">
+                        {% if last_log %}
+                            <dl class="row mb-0">
+                                <dt class="col-sm-6">Tempo</dt>
+                                <dd class="col-sm-6">
+                                    {{ last_log.tempo }} BPM
+                                </dd>
+                                <dt class="col-sm-6">Difficulty</dt>
+                                <dd class="col-sm-6">
+                                    {{ last_log.get_difficulty_display }}
+                                </dd>
+                                <dt class="col-sm-6">Relaxation</dt>
+                                <dd class="col-sm-6">
+                                    {{ last_log.get_relaxation_level_display }}
+                                </dd>
+                            </dl>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Averages</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Difficulty</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.avg_difficulty|floatformat:1|default:"—" }}
+                            </dd>
+                            <dt class="col-sm-6">Relaxation</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.avg_relaxation|floatformat:1|default:"—" }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-{% if stats.practice_count %}
-<div class="row mb-4">
-    <div class="col-md-4">
         <div class="card">
-            <div class="card-header">Tempo</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-6">Min</dt>
-                    <dd class="col-sm-6">{{ stats.min_tempo }} BPM</dd>
-                    <dt class="col-sm-6">Avg</dt>
-                    <dd class="col-sm-6">{{ stats.avg_tempo|floatformat:1 }} BPM</dd>
-                    <dt class="col-sm-6">Max</dt>
-                    <dd class="col-sm-6">{{ stats.max_tempo }} BPM</dd>
-                </dl>
+            <div class="card-header">Recent Practice Logs</div>
+            <div class="card-body p-0">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Tempo</th>
+                            <th>Difficulty</th>
+                            <th>Relaxation</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                            <tr>
+                                <td>{{ log.practiced_on }}</td>
+                                <td>{{ log.tempo }} BPM</td>
+                                <td>{{ log.get_difficulty_display }}</td>
+                                <td>{{ log.get_relaxation_level_display }}</td>
+                                <td>{{ log.notes|truncatewords:15|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Last Session</div>
-            <div class="card-body">
-                {% if last_log %}
-                <dl class="row mb-0">
-                    <dt class="col-sm-6">Tempo</dt>
-                    <dd class="col-sm-6">{{ last_log.tempo }} BPM</dd>
-                    <dt class="col-sm-6">Difficulty</dt>
-                    <dd class="col-sm-6">{{ last_log.get_difficulty_display }}</dd>
-                    <dt class="col-sm-6">Relaxation</dt>
-                    <dd class="col-sm-6">{{ last_log.get_relaxation_level_display }}</dd>
-                </dl>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Averages</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-6">Difficulty</dt>
-                    <dd class="col-sm-6">{{ stats.avg_difficulty|floatformat:1|default:"—" }}</dd>
-                    <dt class="col-sm-6">Relaxation</dt>
-                    <dd class="col-sm-6">{{ stats.avg_relaxation|floatformat:1|default:"—" }}</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">Recent Practice Logs</div>
-    <div class="card-body p-0">
-        <table class="table table-striped mb-0">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Tempo</th>
-                    <th>Difficulty</th>
-                    <th>Relaxation</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in recent_logs %}
-                <tr>
-                    <td>{{ log.practiced_on }}</td>
-                    <td>{{ log.tempo }} BPM</td>
-                    <td>{{ log.get_difficulty_display }}</td>
-                    <td>{{ log.get_relaxation_level_display }}</td>
-                    <td>{{ log.notes|truncatewords:15|default:"—" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-{% endblock %}
+    {% endif %}
+{% endblock content %}

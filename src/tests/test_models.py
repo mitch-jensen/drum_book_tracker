@@ -31,12 +31,11 @@ def test_create_section(section: Section, book: Book) -> None:
 
 
 def test_create_exercise(exercise: Exercise, section: Section) -> None:
-    assert exercise.title == "Exercise 1"
-    assert exercise.exercise_number == 1
+    assert exercise.identifier == "1"
     assert exercise.page_number is None
     assert exercise.section_id == section.id
-    assert str(exercise) == "Stick Control - Exercise 1"
-    assert "exercise_number=1" in repr(exercise)
+    assert "Stick Control" in str(exercise)
+    assert "identifier='1'" in repr(exercise)
 
 
 def test_create_tag(tag: Tag) -> None:
@@ -63,5 +62,6 @@ def test_model_meta_has_expected_constraints_and_indexes() -> None:
     practice_log_index_names = {index.name for index in PracticeLog._meta.indexes}
 
     assert "unique_section_order" in section_constraint_names
-    assert "unique_exercise_number" in exercise_constraint_names
+    assert "unique_exercise_identifier" in exercise_constraint_names
+    assert "exercise_identifier_or_description_required" in exercise_constraint_names
     assert "idx_practice_exercise_date" in practice_log_index_names

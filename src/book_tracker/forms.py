@@ -5,7 +5,7 @@ from crispy_forms.layout import Layout
 from django import forms
 from django.urls import reverse_lazy
 
-from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
+from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 
 
 class AuthorForm(forms.ModelForm):
@@ -59,18 +59,57 @@ class SectionForm(forms.ModelForm):
 class ExerciseForm(forms.ModelForm):
     class Meta:  # noqa: D106
         model = Exercise
-        fields = ("section", "title", "exercise_number", "page_number", "tags")
+        fields = ("section", "identifier", "description", "page_number", "tags")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = False
-        self.helper.layout = Layout("section", "title", "exercise_number", "page_number", "tags")
+        self.helper.layout = Layout("section", "identifier", "description", "page_number", "tags")
         for field in self.fields.values():
             if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
                 field.widget.attrs.setdefault("class", "form-select")
             else:
                 field.widget.attrs.setdefault("class", "form-control")
+
+
+class BulkExerciseCreateForm(forms.Form):
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.select_related("book").order_by("book__title", "order"),
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    start = forms.IntegerField(min_value=1, initial=1, widget=forms.NumberInput(attrs={"class": "form-control"}))
+    end = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={"class": "form-control"}))
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.order_by("name"),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
+    )
+
+    def clean(self) -> dict[str, Any]:  # noqa: D102
+        cleaned = super().clean()
+        start = cleaned.get("start")
+        end = cleaned.get("end")
+        section = cleaned.get("section")
+        if start is not None and end is not None:
+            if start > end:
+                msg = "Start must be less than or equal to end."
+                raise forms.ValidationError(msg)
+            if section is not None:
+                identifiers = [str(i) for i in range(start, end + 1)]
+                existing = set(
+                    Exercise.objects.filter(section=section, identifier__in=identifiers).values_list(
+                        "identifier",
+                        flat=True,
+                    ),
+                )
+                if existing:
+                    sorted_ids = sorted(existing, key=lambda x: int(x) if x.isdigit() else x)
+                    msg = f"Exercises with these identifiers already exist in this section: {', '.join(sorted_ids)}"
+                    raise forms.ValidationError(
+                        msg,
+                    )
+        return cleaned
 
 
 class PracticeLogForm(forms.ModelForm):
@@ -152,7 +191,7 @@ class PracticeLogForm(forms.ModelForm):
                     section__book_id=book_id,
                 )
                 .select_related("section")
-                .order_by("section__order", "exercise_number")
+                .order_by("section__order", "identifier")
             )
             if section_id:
                 qs = qs.filter(section_id=section_id)

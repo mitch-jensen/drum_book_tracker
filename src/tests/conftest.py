@@ -25,7 +25,7 @@ def section(book: Book) -> Section:
 
 @pytest.fixture
 def exercise(section: Section) -> Exercise:
-    return ExerciseFactory(section=section, title="Exercise 1", exercise_number=1)
+    return ExerciseFactory(section=section, identifier="1")
 
 
 @pytest.fixture

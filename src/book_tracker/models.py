@@ -91,8 +91,8 @@ class Exercise(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="exercises")
     section_id: uuid.UUID
-    title = models.CharField(max_length=255)
-    exercise_number = models.PositiveSmallIntegerField()
+    identifier = models.CharField(max_length=50, blank=True, default="")
+    description = models.TextField(blank=True, default="")
     tags = models.ManyToManyField[Tag, Tag](Tag, related_name="exercises", blank=True)
     page_number = models.PositiveIntegerField(null=True, blank=True)
 
@@ -100,13 +100,24 @@ class Exercise(models.Model):
         practice_logs: RelatedManager[PracticeLog]
 
     class Meta:  # noqa: D106
-        constraints = (models.UniqueConstraint(fields=["section", "exercise_number"], name="unique_exercise_number"),)
+        constraints = (
+            models.UniqueConstraint(
+                fields=["section", "identifier"],
+                name="unique_exercise_identifier",
+                condition=~models.Q(identifier=""),
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(identifier="", description=""),
+                name="exercise_identifier_or_description_required",
+            ),
+        )
 
     def __repr__(self) -> str:
-        return f"<Exercise(id={self.id}, title={self.title}, section={self.section.title}, exercise_number={self.exercise_number})>"
+        return f"<Exercise(id={self.id}, section={self.section.title}, identifier={self.identifier!r})>"
 
     def __str__(self) -> str:
-        return f"{self.section.book.title} - {self.title}"
+        label = f"#{self.identifier}" if self.identifier else self.description[:50]
+        return f"{self.section.book.title} - {self.section.title} {label}"
 
     def tempi_practiced(self) -> list[int]:
         """Return a list of tempi practiced for this exercise."""
@@ -203,7 +214,7 @@ class PracticeLog(models.Model):
         indexes = (models.Index(fields=["exercise", "practiced_on"], name="idx_practice_exercise_date"),)
 
     def __repr__(self) -> str:
-        return f"<PracticeLog(id={self.id}, exercise={self.exercise.title}, practiced_on={self.practiced_on}, tempo={self.tempo})>"
+        return f"<PracticeLog(id={self.id}, exercise={self.exercise}, practiced_on={self.practiced_on}, tempo={self.tempo})>"
 
     def __str__(self) -> str:
-        return f"{self.exercise.title} - {self.practiced_on} @ {self.tempo} BPM"
+        return f"{self.exercise} - {self.practiced_on} @ {self.tempo} BPM"

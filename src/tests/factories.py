@@ -52,8 +52,7 @@ class ExerciseFactory(DjangoModelFactory):
         skip_postgeneration_save = True
 
     section = factory.SubFactory(SectionFactory)
-    title = factory.LazyAttribute(lambda o: f"Exercise {o.exercise_number}")
-    exercise_number = factory.Sequence(lambda n: n + 1)
+    identifier = factory.Sequence(lambda n: str(n + 1))
 
     @factory.post_generation
     def tags(self, create: bool, extracted: list[Tag] | None, **kwargs: object) -> None:

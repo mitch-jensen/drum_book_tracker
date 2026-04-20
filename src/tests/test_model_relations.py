@@ -45,10 +45,10 @@ def test_book_with_multiple_sections() -> None:
 
 def test_section_with_multiple_exercises() -> None:
     section = SectionFactory()
-    exercises = [ExerciseFactory(section=section, exercise_number=i) for i in range(1, 6)]
+    exercises = [ExerciseFactory(section=section, identifier=str(i)) for i in range(1, 6)]
 
     assert section.exercises.count() == 5
-    assert list(section.exercises.order_by("exercise_number")) == exercises
+    assert list(section.exercises.order_by("identifier")) == exercises
 
 
 def test_exercise_with_multiple_tags() -> None:
@@ -81,7 +81,7 @@ def test_practice_logs_across_full_object_graph() -> None:
         for section_order in range(1, 3):
             section = SectionFactory(book=book, order=section_order)
             for exercise_num in range(1, 3):
-                exercise = ExerciseFactory(section=section, exercise_number=exercise_num)
+                exercise = ExerciseFactory(section=section, identifier=str(exercise_num))
                 all_logs.append(PracticeLogFactory(exercise=exercise, practiced_on=yesterday, tempo=80))
                 all_logs.append(PracticeLogFactory(exercise=exercise, practiced_on=today, tempo=100))
 
@@ -131,7 +131,7 @@ def test_exercise_with_page_number() -> None:
 
 def test_deleting_section_cascades_to_exercises_and_logs() -> None:
     section = SectionFactory()
-    exercises = [ExerciseFactory(section=section, exercise_number=i) for i in range(1, 4)]
+    exercises = [ExerciseFactory(section=section, identifier=str(i)) for i in range(1, 4)]
     for ex in exercises:
         PracticeLogFactory.create_batch(2, exercise=ex)
 
