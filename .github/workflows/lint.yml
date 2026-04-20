@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-extras --all-groups
         env:
-          UV_PROJECT_ENVIRONMENT: "/usr/local/"
+          UV_PROJECT_ENVIRONMENT: ${{ env.pythonLocation }}
 
       - name: Type check
         uses: jakebailey/pyright-action@v3.0.2
