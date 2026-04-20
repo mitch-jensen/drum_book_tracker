@@ -255,6 +255,41 @@ def exercise_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 
 
 @require_GET
+@require_htmx
+def section_options(request: HtmxHttpRequest) -> HttpResponse:
+    book_id = request.GET.get("book")
+    exercise_target = request.GET.get("exercise_target", "id_exercise")
+    if book_id:
+        sections = Section.objects.filter(book_id=book_id).order_by("order")
+        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "exercise_number")
+    else:
+        sections = Section.objects.none()
+        exercises = Exercise.objects.none()
+    return render(
+        request,
+        "book_tracker/section_options.html",
+        {"sections": sections, "exercises": exercises, "exercise_target": exercise_target},
+    )
+
+
+@require_GET
+@require_htmx
+def exercise_options(request: HtmxHttpRequest) -> HttpResponse:
+    book_id = request.GET.get("book")
+    if book_id:
+        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "exercise_number")
+        section_id = request.GET.get("section")
+        if section_id:
+            exercises = exercises.filter(section_id=section_id)
+        page_num = request.GET.get("page_number")
+        if page_num:
+            exercises = exercises.filter(page_number=page_num)
+    else:
+        exercises = Exercise.objects.none()
+    return render(request, "book_tracker/exercise_options.html", {"exercises": exercises})
+
+
+@require_GET
 def practice_log_list(request: HtmxHttpRequest) -> HttpResponse:
     logs = PracticeLog.objects.select_related("exercise__section__book").order_by("-practiced_on", "-pk")
     form = PracticeLogForm()
@@ -291,7 +326,22 @@ def practice_log_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 def practice_log_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     log = get_object_or_404(PracticeLog, pk=pk)
     form = PracticeLogForm(instance=log)
-    return render(request, "book_tracker/practice_log_edit_row.html", {"log": log, "form": form})
+    books = Book.objects.order_by("title")
+    current_book_id = log.exercise.section.book_id
+    current_section_id = log.exercise.section_id
+    sections = Section.objects.filter(book_id=current_book_id).order_by("order")
+    return render(
+        request,
+        "book_tracker/practice_log_edit_row.html",
+        {
+            "log": log,
+            "form": form,
+            "books": books,
+            "sections": sections,
+            "current_book_id": current_book_id,
+            "current_section_id": current_section_id,
+        },
+    )
 
 
 @require_POST
@@ -303,4 +353,19 @@ def practice_log_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
         form.save()
         log = PracticeLog.objects.select_related("exercise__section__book").get(pk=pk)
         return render(request, "book_tracker/practice_logs.html#log-row", {"log": log})
-    return render(request, "book_tracker/practice_log_edit_row.html", {"log": log, "form": form})
+    books = Book.objects.order_by("title")
+    book_id = request.POST.get("book") or log.exercise.section.book_id
+    current_section_id = request.POST.get("section") or log.exercise.section_id
+    sections = Section.objects.filter(book_id=book_id).order_by("order")
+    return render(
+        request,
+        "book_tracker/practice_log_edit_row.html",
+        {
+            "log": log,
+            "form": form,
+            "books": books,
+            "sections": sections,
+            "current_book_id": book_id,
+            "current_section_id": current_section_id,
+        },
+    )

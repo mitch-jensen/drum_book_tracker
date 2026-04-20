@@ -1,6 +1,33 @@
 <tr id="log-{{ log.id }}">
     <td>
-        <select name="exercise" class="form-select form-select-sm{% if form.exercise.errors %} is-invalid{% endif %}">
+        <select name="book" class="form-select form-select-sm"
+            hx-get="{% url 'section-options' %}?exercise_target=edit-exercise-{{ log.id }}"
+            hx-target="#edit-section-{{ log.id }}" hx-include="[name=book]" hx-trigger="change">
+            <option value="">---------</option>
+            {% for book in books %}
+            <option value="{{ book.pk }}" {% if book.pk==current_book_id %}selected{% endif %}>{{ book.title }}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td>
+        <select name="section" id="edit-section-{{ log.id }}" class="form-select form-select-sm"
+            hx-get="{% url 'exercise-options' %}" hx-target="#edit-exercise-{{ log.id }}"
+            hx-include="[name=book],[name=section],[name=page_number]" hx-trigger="change">
+            <option value="">---------</option>
+            {% for section in sections %}
+            <option value="{{ section.pk }}" {% if section.pk==current_section_id %}selected{% endif %}>{{ section }}
+            </option>
+            {% endfor %}
+        </select>
+    </td>
+    <td>
+        <input type="number" name="page_number" value="" min="1" class="form-control form-control-sm"
+            hx-get="{% url 'exercise-options' %}" hx-target="#edit-exercise-{{ log.id }}"
+            hx-include="[name=book],[name=section],[name=page_number]" hx-trigger="change" placeholder="Page #">
+    </td>
+    <td>
+        <select name="exercise" id="edit-exercise-{{ log.id }}"
+            class="form-select form-select-sm{% if form.exercise.errors %} is-invalid{% endif %}">
             {% for value, label in form.exercise.field.choices %}
             <option value="{{ value }}" {% if value|stringformat:"s"==form.exercise.value|stringformat:"s" %}selected{%
                 endif %}>{{
