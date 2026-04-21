@@ -1,11 +1,22 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
+from django.contrib import messages
 from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
-from book_tracker.forms import AuthorForm, BookForm, BulkExerciseCreateForm, ExerciseForm, PracticeLogForm, SectionForm
+from book_tracker.forms import (
+    AuthorForm,
+    BookForm,
+    BulkExerciseCreateForm,
+    ExerciseForm,
+    NotationUploadForm,
+    PracticeLogForm,
+    SectionForm,
+)
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
+from book_tracker.ocr import process_notation
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
@@ -277,6 +288,37 @@ def exercise_detail(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     )
 
 
+@require_POST
+def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    exercise = get_object_or_404(Exercise, pk=pk)
+    form = NotationUploadForm(request.POST, request.FILES, instance=exercise)
+    if form.is_valid():
+        form.save()
+    return redirect("exercise-detail", pk=pk)
+
+
+@require_POST
+def exercise_process_ocr(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    exercise = get_object_or_404(Exercise, pk=pk)
+    if not exercise.notation_image:
+        return redirect("exercise-detail", pk=pk)
+
+    input_path = str(exercise.notation_image.path)
+    output_dir = str(settings.MEDIA_ROOT / "notation" / "musicxml")
+
+    result = process_notation(input_path, output_dir)
+    if result.success:
+        # Save the relative path from MEDIA_ROOT
+        relative_path = str(result.output_path).replace(str(settings.MEDIA_ROOT) + "/", "")
+        exercise.notation_musicxml.name = relative_path
+        exercise.save(update_fields=["notation_musicxml"])
+        messages.success(request, "MusicXML generated successfully.")
+    else:
+        messages.error(request, f"OCR processing failed: {result.error}")
+
+    return redirect("exercise-detail", pk=pk)
+
+
 def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] | list[str]:
     """Parse and validate page range rows from POST data.
 
@@ -471,6 +513,7 @@ def practice_log_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 def practice_log_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     log = get_object_or_404(PracticeLog, pk=pk)
     form = PracticeLogForm(instance=log)
+    form.fields["exercise"].widget.attrs["id"] = f"edit-exercise-{log.id}"
     books = Book.objects.order_by("title")
     current_book_id = log.exercise.section.book_id
     current_section_id = log.exercise.section_id
@@ -502,6 +545,7 @@ def practice_log_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     book_id = request.POST.get("book") or log.exercise.section.book_id
     current_section_id = request.POST.get("section") or log.exercise.section_id
     sections = Section.objects.filter(book_id=book_id).order_by("order")
+    form.fields["exercise"].widget.attrs["id"] = f"edit-exercise-{log.id}"
     return render(
         request,
         "book_tracker/practice_log_edit_row.html",

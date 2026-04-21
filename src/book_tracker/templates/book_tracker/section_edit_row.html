@@ -1,21 +1,15 @@
+{% load form_tags %}
 <tr id="section-{{ section.id }}">
     <td>
-        {{ form.book }}
+        {{ form.book|widget_sm }}
         {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </td>
     <td>
-        <input type="text"
-               name="title"
-               value="{{ form.title.value|default:'' }}"
-               class="form-control form-control-sm{% if form.title.errors %} is-invalid{% endif %}">
+        {{ form.title|widget_sm }}
         {% for error in form.title.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
     </td>
     <td>
-        <input type="number"
-               name="order"
-               value="{{ form.order.value|default:'' }}"
-               class="form-control form-control-sm{% if form.order.errors %} is-invalid{% endif %}"
-               min="0">
+        {{ form.order|widget_sm }}
         {% for error in form.order.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
     </td>
     <td class="text-end">

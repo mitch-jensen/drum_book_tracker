@@ -72,6 +72,61 @@
             </div>
         </div>
     </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">Notation</div>
+                <div class="card-body">
+                    {% if exercise.notation_image %}
+                        <div class="mb-3">
+                            <img src="{{ exercise.notation_image.url }}"
+                                 alt="Notation for {{ exercise }}"
+                                 class="img-fluid border rounded">
+                        </div>
+                        {% if exercise.notation_musicxml %}
+                            <div id="notation-render" class="mb-3 border rounded p-3 bg-white"></div>
+                        {% endif %}
+                        <form method="post" action="{% url 'exercise-process-ocr' exercise.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-primary">
+                                {% if exercise.notation_musicxml %}
+                                    Re-process OCR (Regenerate MusicXML)
+                                {% else %}
+                                    Process OCR (Generate MusicXML)
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    <form method="post"
+                          action="{% url 'exercise-upload-notation' exercise.id %}"
+                          enctype="multipart/form-data"
+                          class="mt-3">
+                        {% csrf_token %}
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label for="id_notation_image" class="form-label">
+                                    {% if exercise.notation_image %}
+                                        Replace
+                                    {% else %}
+                                        Upload
+                                    {% endif %}
+                                    Notation Image
+                                </label>
+                                <input type="file"
+                                       name="notation_image"
+                                       id="id_notation_image"
+                                       class="form-control"
+                                       accept="image/*">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">Upload</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     {% if stats.practice_count %}
         <div class="row mb-4">
             <div class="col-md-4">
@@ -165,3 +220,49 @@
         </div>
     {% endif %}
 {% endblock content %}
+{% block extra_js %}
+    {% if exercise.notation_musicxml %}
+        <script src="https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var renderTarget = document.getElementById("notation-render");
+
+                function showNotationError(message) {
+                    if (!renderTarget) {
+                        return;
+                    }
+                    renderTarget.innerHTML = "<div class=\"alert alert-warning mb-0\">" + message + "</div>";
+                }
+
+                verovio.module.onRuntimeInitialized = function () {
+                    if (!renderTarget) {
+                        return;
+                    }
+
+                    var tk = new verovio.toolkit();
+                    fetch("{{ exercise.notation_musicxml.url }}")
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error("Notation file could not be loaded.");
+                            }
+                            return response.text();
+                        })
+                        .then(function (data) {
+                            var loaded = tk.loadData(data);
+                            if (!loaded) {
+                                throw new Error("Notation data could not be parsed.");
+                            }
+                            var svg = tk.renderToSVG(1);
+                            if (!svg) {
+                                throw new Error("No notation page was produced.");
+                            }
+                            renderTarget.innerHTML = svg;
+                        })
+                        .catch(function () {
+                            showNotationError("Generated notation could not be rendered. Try running OCR again with a clearer image.");
+                        });
+                };
+            });
+        </script>
+    {% endif %}
+{% endblock extra_js %}

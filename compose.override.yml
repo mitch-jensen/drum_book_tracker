@@ -13,3 +13,6 @@ services:
           target: /app/src
         - action: rebuild
           path: pyproject.toml
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"

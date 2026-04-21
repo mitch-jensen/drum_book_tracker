@@ -73,6 +73,17 @@ class ExerciseForm(forms.ModelForm):
                 field.widget.attrs.setdefault("class", "form-control")
 
 
+class NotationUploadForm(forms.ModelForm):
+    class Meta:  # noqa: D106
+        model = Exercise
+        fields = ("notation_image",)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
+        super().__init__(*args, **kwargs)
+        self.fields["notation_image"].widget.attrs["class"] = "form-control"
+        self.fields["notation_image"].widget.attrs["accept"] = "image/*"
+
+
 class BulkExerciseCreateForm(forms.Form):
     section = forms.ModelChoiceField(
         queryset=Section.objects.select_related("book").order_by("book__title", "order"),

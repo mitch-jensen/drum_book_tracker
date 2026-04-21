@@ -95,6 +95,8 @@ class Exercise(models.Model):
     description = models.TextField(blank=True, default="")
     tags = models.ManyToManyField[Tag, Tag](Tag, related_name="exercises", blank=True)
     page_number = models.PositiveIntegerField(null=True, blank=True)
+    notation_image = models.ImageField(upload_to="notation/images/", blank=True)
+    notation_musicxml = models.FileField(upload_to="notation/musicxml/", blank=True)
 
     if TYPE_CHECKING:
         practice_logs: RelatedManager[PracticeLog]
