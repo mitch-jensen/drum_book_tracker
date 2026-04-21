@@ -83,19 +83,6 @@
                                  alt="Notation for {{ exercise }}"
                                  class="img-fluid border rounded">
                         </div>
-                        {% if exercise.notation_musicxml %}
-                            <div id="notation-render" class="mb-3 border rounded p-3 bg-white"></div>
-                        {% endif %}
-                        <form method="post" action="{% url 'exercise-process-ocr' exercise.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-primary">
-                                {% if exercise.notation_musicxml %}
-                                    Re-process OCR (Regenerate MusicXML)
-                                {% else %}
-                                    Process OCR (Generate MusicXML)
-                                {% endif %}
-                            </button>
-                        </form>
                     {% endif %}
                     <form method="post"
                           action="{% url 'exercise-upload-notation' exercise.id %}"
@@ -220,49 +207,3 @@
         </div>
     {% endif %}
 {% endblock content %}
-{% block extra_js %}
-    {% if exercise.notation_musicxml %}
-        <script src="https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js"></script>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                var renderTarget = document.getElementById("notation-render");
-
-                function showNotationError(message) {
-                    if (!renderTarget) {
-                        return;
-                    }
-                    renderTarget.innerHTML = "<div class=\"alert alert-warning mb-0\">" + message + "</div>";
-                }
-
-                verovio.module.onRuntimeInitialized = function () {
-                    if (!renderTarget) {
-                        return;
-                    }
-
-                    var tk = new verovio.toolkit();
-                    fetch("{{ exercise.notation_musicxml.url }}")
-                        .then(function (response) {
-                            if (!response.ok) {
-                                throw new Error("Notation file could not be loaded.");
-                            }
-                            return response.text();
-                        })
-                        .then(function (data) {
-                            var loaded = tk.loadData(data);
-                            if (!loaded) {
-                                throw new Error("Notation data could not be parsed.");
-                            }
-                            var svg = tk.renderToSVG(1);
-                            if (!svg) {
-                                throw new Error("No notation page was produced.");
-                            }
-                            renderTarget.innerHTML = svg;
-                        })
-                        .catch(function () {
-                            showNotationError("Generated notation could not be rendered. Try running OCR again with a clearer image.");
-                        });
-                };
-            });
-        </script>
-    {% endif %}
-{% endblock extra_js %}

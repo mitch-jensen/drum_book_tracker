@@ -1,14 +1,12 @@
 from http import HTTPStatus
 from io import BytesIO
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from PIL import Image
 
-from book_tracker.ocr import AudiverisResult
 from tests.factories import ExerciseFactory
 
 if TYPE_CHECKING:
@@ -75,59 +73,6 @@ class TestExerciseUploadNotation:
         assert response.url == reverse("exercise-detail", args=[exercise.pk])
 
 
-class TestExerciseProcessOcr:
-    def test_redirects_without_image(self, client: Client) -> None:
-        exercise = ExerciseFactory()
-
-        response = client.post(reverse("exercise-process-ocr", args=[exercise.pk]))
-
-        assert response.status_code == HTTPStatus.FOUND
-        exercise.refresh_from_db()
-        assert not exercise.notation_musicxml
-
-    @patch("book_tracker.views.process_notation")
-    def test_processes_ocr_successfully(self, mock_process: object, client: Client, tmp_path: object) -> None:
-        exercise = ExerciseFactory()
-        # Upload an image first
-        image = _create_test_image()
-        client.post(reverse("exercise-upload-notation", args=[exercise.pk]), {"notation_image": image})
-        exercise.refresh_from_db()
-
-        mock_process.return_value = AudiverisResult(
-            success=True,
-            output_path=str(exercise.notation_image.path).replace("/images/", "/musicxml/").replace(".png", ".mxl"),
-        )
-
-        response = client.post(reverse("exercise-process-ocr", args=[exercise.pk]), follow=True)
-
-        assert response.status_code == HTTPStatus.OK
-        mock_process.assert_called_once()
-        exercise.refresh_from_db()
-        assert exercise.notation_musicxml
-        assert b"MusicXML generated successfully" in response.content
-
-    @patch("book_tracker.views.process_notation")
-    def test_handles_ocr_failure(self, mock_process: object, client: Client) -> None:
-        exercise = ExerciseFactory()
-        image = _create_test_image()
-        client.post(reverse("exercise-upload-notation", args=[exercise.pk]), {"notation_image": image})
-        exercise.refresh_from_db()
-
-        mock_process.return_value = AudiverisResult(success=False, error="Processing failed")
-
-        response = client.post(reverse("exercise-process-ocr", args=[exercise.pk]), follow=True)
-
-        assert response.status_code == HTTPStatus.OK
-        exercise.refresh_from_db()
-        assert not exercise.notation_musicxml
-        assert b"OCR processing failed" in response.content
-
-    def test_rejects_get_request(self, client: Client) -> None:
-        exercise = ExerciseFactory()
-        response = client.get(reverse("exercise-process-ocr", args=[exercise.pk]))
-        assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
-
-
 class TestExerciseDetailNotation:
     def test_shows_upload_form(self, client: Client) -> None:
         exercise = ExerciseFactory()
@@ -150,4 +95,3 @@ class TestExerciseDetailNotation:
         content = response.content.decode()
         assert "Replace" in content
         assert "Notation Image" in content
-        assert "Process OCR" in content

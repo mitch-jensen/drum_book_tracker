@@ -25,7 +25,6 @@ urlpatterns = [
     path("exercises/<str:pk>/", views.exercise_row, name="exercise-row"),
     path("exercises/<str:pk>/detail/", views.exercise_detail, name="exercise-detail"),
     path("exercises/<str:pk>/upload-notation/", views.exercise_upload_notation, name="exercise-upload-notation"),
-    path("exercises/<str:pk>/process-ocr/", views.exercise_process_ocr, name="exercise-process-ocr"),
     path("exercises/<str:pk>/edit/", views.exercise_edit, name="exercise-edit"),
     path("exercises/<str:pk>/update/", views.exercise_update, name="exercise-update"),
     path("logs/", views.practice_log_list, name="log-list"),

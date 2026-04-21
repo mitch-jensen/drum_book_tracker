@@ -12,7 +12,6 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       DATABASE_HOST: db
       DATABASE_PORT: 5432
-      AUDIVERIS_URL: http://audiveris:7070
     volumes:
       - media_data:/app/src/media
     depends_on:
@@ -34,13 +33,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  audiveris:
-    build:
-      context: .
-      dockerfile: Dockerfile.audiveris
-    restart: unless-stopped
-    volumes:
-      - media_data:/app/src/media
 volumes:
   db_data:
   media_data:

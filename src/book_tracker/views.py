@@ -1,7 +1,5 @@
 from typing import TYPE_CHECKING
 
-from django.conf import settings
-from django.contrib import messages
 from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
@@ -16,7 +14,6 @@ from book_tracker.forms import (
     SectionForm,
 )
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
-from book_tracker.ocr import process_notation
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
@@ -297,28 +294,6 @@ def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return redirect("exercise-detail", pk=pk)
 
 
-@require_POST
-def exercise_process_ocr(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    exercise = get_object_or_404(Exercise, pk=pk)
-    if not exercise.notation_image:
-        return redirect("exercise-detail", pk=pk)
-
-    input_path = str(exercise.notation_image.path)
-    output_dir = str(settings.MEDIA_ROOT / "notation" / "musicxml")
-
-    result = process_notation(input_path, output_dir)
-    if result.success:
-        # Save the relative path from MEDIA_ROOT
-        relative_path = str(result.output_path).replace(str(settings.MEDIA_ROOT) + "/", "")
-        exercise.notation_musicxml.name = relative_path
-        exercise.save(update_fields=["notation_musicxml"])
-        messages.success(request, "MusicXML generated successfully.")
-    else:
-        messages.error(request, f"OCR processing failed: {result.error}")
-
-    return redirect("exercise-detail", pk=pk)
-
-
 def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] | list[str]:
     """Parse and validate page range rows from POST data.
 
@@ -401,16 +376,17 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
                 page_range_errors = result
             else:
                 page_lookup = result
-                exercises = Exercise.objects.bulk_create(
-                    [Exercise(section=section, identifier=str(i), page_number=page_lookup[i]) for i in range(start, end + 1)],
-                )
-                if tags:
-                    through_model = Exercise.tags.through
-                    through_objects = [through_model(exercise_id=exercise.pk, tag_id=tag.pk) for exercise in exercises for tag in tags]
-                    through_model.objects.bulk_create(through_objects)
+
+                for n in range(start, end + 1):
+                    Exercise.objects.create(
+                        section=section,
+                        identifier=str(n),
+                        page_number=page_lookup[n],
+                    ).tags.set(tags)
+
                 return redirect("exercise-list")
 
-        # Re-render with errors — preserve page range rows from POST data
+        # Re-render with errors - preserve page range rows from POST data
         range_starts = request.POST.getlist("range_start")
         range_ends = request.POST.getlist("range_end")
         range_pages = request.POST.getlist("range_page")
@@ -448,7 +424,7 @@ def section_options(request: HtmxHttpRequest) -> HttpResponse:
     exercise_target = request.GET.get("exercise_target", "id_exercise")
     if book_id:
         sections = Section.objects.filter(book_id=book_id).order_by("order")
-        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "identifier")
+        exercises = Exercise.objects.none()
     else:
         sections = Section.objects.none()
         exercises = Exercise.objects.none()
@@ -464,13 +440,16 @@ def section_options(request: HtmxHttpRequest) -> HttpResponse:
 def exercise_options(request: HtmxHttpRequest) -> HttpResponse:
     book_id = request.GET.get("book")
     if book_id:
-        exercises = Exercise.objects.filter(section__book_id=book_id).select_related("section").order_by("section__order", "identifier")
-        section_id = request.GET.get("section")
-        if section_id:
-            exercises = exercises.filter(section_id=section_id)
-        page_num = request.GET.get("page_number")
-        if page_num:
-            exercises = exercises.filter(page_number=page_num)
+        exercises = (
+            Exercise.objects.filter(
+                section__book_id=book_id,
+            )
+            .select_related(
+                "section",
+                "section__book",
+            )
+            .order_by("section__order", "identifier")
+        )
     else:
         exercises = Exercise.objects.none()
     return render(request, "book_tracker/exercise_options.html", {"exercises": exercises})
@@ -488,7 +467,7 @@ def practice_log_list(request: HtmxHttpRequest) -> HttpResponse:
 def practice_log_create(request: HtmxHttpRequest) -> HttpResponse:
     form = PracticeLogForm(request.POST)
     if form.is_valid():
-        form.save()
+        log = form.save()
         logs = PracticeLog.objects.select_related("exercise__section__book").order_by("-practiced_on", "-pk")
         response = render(
             request,
@@ -497,6 +476,7 @@ def practice_log_create(request: HtmxHttpRequest) -> HttpResponse:
         )
         response["HX-Retarget"] = "#log-list-container"
         response["HX-Reswap"] = "innerHTML"
+        response["HX-Trigger"] = "logCreated"
         return response
     return render(request, "book_tracker/practice_logs.html#log-form", {"form": form})
 
@@ -538,8 +518,8 @@ def practice_log_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     log = get_object_or_404(PracticeLog, pk=pk)
     form = PracticeLogForm(request.POST, instance=log)
     if form.is_valid():
-        form.save()
-        log = PracticeLog.objects.select_related("exercise__section__book").get(pk=pk)
+        log = form.save()
+        log = PracticeLog.objects.select_related("exercise__section__book").get(pk=log.pk)
         return render(request, "book_tracker/practice_logs.html#log-row", {"log": log})
     books = Book.objects.order_by("title")
     book_id = request.POST.get("book") or log.exercise.section.book_id
