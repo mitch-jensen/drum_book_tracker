@@ -19,7 +19,7 @@ dev = [
     "debugpy>=1.8.20",
     "django-types>=0.23.0",
     "identify>=2.6.19",
-    "pre-commit>=4.5.1",
+    "pre-commit>=4.6.0",
     "ruff>=0.15.11",
 ]
 test = ["factory-boy>=3.3.3", "pytest>=9.0.3", "pytest-django>=4.12.0"]
