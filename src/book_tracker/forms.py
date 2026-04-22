@@ -22,6 +22,20 @@ class AuthorForm(forms.ModelForm):
             field.widget.attrs.setdefault("class", "form-control")
 
 
+class TagForm(forms.ModelForm):
+    class Meta:  # noqa: D106
+        model = Tag
+        fields = ("name",)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout("name")
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+
+
 class BookForm(forms.ModelForm):
     class Meta:  # noqa: D106
         model = Book
@@ -71,6 +85,19 @@ class ExerciseForm(forms.ModelForm):
                 field.widget.attrs.setdefault("class", "form-select")
             else:
                 field.widget.attrs.setdefault("class", "form-control")
+
+
+class ExerciseTagFilterForm(forms.Form):
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.order_by("name"),
+        required=False,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": "form-select",
+                "size": "5",
+            },
+        ),
+    )
 
 
 class NotationUploadForm(forms.ModelForm):

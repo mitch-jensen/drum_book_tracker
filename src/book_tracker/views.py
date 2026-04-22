@@ -9,11 +9,13 @@ from book_tracker.forms import (
     BookForm,
     BulkExerciseCreateForm,
     ExerciseForm,
+    ExerciseTagFilterForm,
     NotationUploadForm,
     PracticeLogForm,
     SectionForm,
+    TagForm,
 )
-from book_tracker.models import Author, Book, Exercise, PracticeLog, Section
+from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
@@ -74,6 +76,60 @@ def author_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
         form.save()
         return render(request, "book_tracker/authors.html#author-row", {"author": author})
     return render(request, "book_tracker/author_edit_row.html", {"author": author, "form": form})
+
+
+# --- Tag views ---
+
+
+@require_GET
+def tag_list(request: HtmxHttpRequest) -> HttpResponse:
+    tags = Tag.objects.order_by("name")
+    form = TagForm()
+    return render(request, "book_tracker/tags.html", {"tags": tags, "form": form})
+
+
+@require_POST
+@require_htmx
+def tag_create(request: HtmxHttpRequest) -> HttpResponse:
+    form = TagForm(request.POST)
+    if form.is_valid():
+        form.save()
+        tags = Tag.objects.order_by("name")
+        response = render(
+            request,
+            "book_tracker/tags.html#tag-list",
+            {"tags": tags, "form": TagForm()},
+        )
+        response["HX-Retarget"] = "#tag-list-container"
+        response["HX-Reswap"] = "innerHTML"
+        return response
+    return render(request, "book_tracker/tags.html#tag-form", {"form": form})
+
+
+@require_GET
+@require_htmx
+def tag_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    tag = get_object_or_404(Tag, pk=pk)
+    return render(request, "book_tracker/tags.html#tag-row", {"tag": tag})
+
+
+@require_GET
+@require_htmx
+def tag_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    tag = get_object_or_404(Tag, pk=pk)
+    form = TagForm(instance=tag)
+    return render(request, "book_tracker/tag_edit_row.html", {"tag": tag, "form": form})
+
+
+@require_POST
+@require_htmx
+def tag_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    tag = get_object_or_404(Tag, pk=pk)
+    form = TagForm(request.POST, instance=tag)
+    if form.is_valid():
+        form.save()
+        return render(request, "book_tracker/tags.html#tag-row", {"tag": tag})
+    return render(request, "book_tracker/tag_edit_row.html", {"tag": tag, "form": form})
 
 
 # --- Book views ---
@@ -191,6 +247,8 @@ def section_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 
 @require_GET
 def exercise_list(request: HtmxHttpRequest) -> HttpResponse:
+    filter_form = ExerciseTagFilterForm(request.GET or None)
+
     exercises = (
         Exercise.objects.select_related("section__book")
         .prefetch_related("tags")
@@ -200,8 +258,16 @@ def exercise_list(request: HtmxHttpRequest) -> HttpResponse:
             "identifier",
         )
     )
+
+    if filter_form.is_valid() and filter_form.cleaned_data["tags"]:
+        exercises = exercises.filter(tags__in=filter_form.cleaned_data["tags"]).distinct()
+
     form = ExerciseForm()
-    return render(request, "book_tracker/exercises.html", {"exercises": exercises, "form": form})
+    return render(
+        request,
+        "book_tracker/exercises.html",
+        {"exercises": exercises, "form": form, "filter_form": filter_form},
+    )
 
 
 @require_POST
@@ -222,7 +288,7 @@ def exercise_create(request: HtmxHttpRequest) -> HttpResponse:
         response = render(
             request,
             "book_tracker/exercises.html#exercise-list",
-            {"exercises": exercises, "form": ExerciseForm()},
+            {"exercises": exercises, "form": ExerciseForm(), "filter_form": ExerciseTagFilterForm()},
         )
         response["HX-Retarget"] = "#exercise-list-container"
         response["HX-Reswap"] = "innerHTML"
