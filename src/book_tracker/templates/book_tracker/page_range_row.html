@@ -1,0 +1,34 @@
+<div class="page-range-row row g-2 mb-2 align-items-end">
+    <div class="col">
+        <label class="form-label">From</label>
+        <input type="number"
+               name="range_start"
+               class="form-control"
+               min="1"
+               {% if range_start %}value="{{ range_start }}"{% endif %}>
+    </div>
+    <div class="col">
+        <label class="form-label">To</label>
+        <input type="number"
+               name="range_end"
+               class="form-control"
+               min="1"
+               {% if range_end %}value="{{ range_end }}"{% endif %}>
+    </div>
+    <div class="col">
+        <label class="form-label">Page</label>
+        <input type="number"
+               name="range_page"
+               class="form-control"
+               min="1"
+               {% if range_page %}value="{{ range_page }}"{% endif %}>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">&nbsp;</label>
+        <button type="button"
+                class="btn btn-outline-danger d-block"
+                hx-get="{% url 'page-range-row' %}"
+                hx-target="closest .page-range-row"
+                hx-swap="delete">Remove</button>
+    </div>
+</div>

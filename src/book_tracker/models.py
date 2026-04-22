@@ -91,22 +91,92 @@ class Exercise(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="exercises")
     section_id: uuid.UUID
-    title = models.CharField(max_length=255)
-    exercise_number = models.PositiveSmallIntegerField()
+    identifier = models.CharField(max_length=50, blank=True, default="")
+    description = models.TextField(blank=True, default="")
     tags = models.ManyToManyField[Tag, Tag](Tag, related_name="exercises", blank=True)
     page_number = models.PositiveIntegerField(null=True, blank=True)
+    notation_image = models.ImageField(upload_to="notation/images/", blank=True)
 
     if TYPE_CHECKING:
         practice_logs: RelatedManager[PracticeLog]
 
     class Meta:  # noqa: D106
-        constraints = (models.UniqueConstraint(fields=["section", "exercise_number"], name="unique_exercise_number"),)
+        constraints = (
+            models.UniqueConstraint(
+                fields=["section", "identifier"],
+                name="unique_exercise_identifier",
+                condition=~models.Q(identifier=""),
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(identifier="", description=""),
+                name="exercise_identifier_or_description_required",
+            ),
+        )
 
     def __repr__(self) -> str:
-        return f"<Exercise(id={self.id}, title={self.title}, section={self.section.title}, exercise_number={self.exercise_number})>"
+        return f"<Exercise(id={self.id}, section={self.section.title}, identifier={self.identifier!r})>"
 
     def __str__(self) -> str:
-        return f"{self.section.book.title} - {self.title}"
+        label = f"#{self.identifier}" if self.identifier else self.description[:50]
+        return f"{self.section.book.title} - {self.section.title} {label}"
+
+    def tempi_practiced(self) -> list[int]:
+        """Return a list of tempi practiced for this exercise."""
+        return list(self.practice_logs.values_list("tempo", flat=True))
+
+    def minimum_tempo(self) -> int:
+        """Return the minimum tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return min(tempi) if tempi else 0
+
+    def average_tempo(self) -> float:
+        """Return the average tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return sum(tempi) / len(tempi) if tempi else 0.0
+
+    def maximum_tempo(self) -> int:
+        """Return the maximum tempo practiced for this exercise."""
+        tempi = self.tempi_practiced()
+        return max(tempi) if tempi else 0
+
+    def most_recent_practice(self) -> datetime.date | None:
+        """Return the date of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.practiced_on if most_recent_log else None
+
+    def practice_count(self) -> int:
+        """Return the total number of practice logs for this exercise."""
+        return self.practice_logs.count()
+
+    def last_practiced_tempo(self) -> int | None:
+        """Return the tempo of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.tempo if most_recent_log else None
+
+    def last_practiced_difficulty(self) -> int | None:
+        """Return the difficulty rating of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.difficulty if most_recent_log else None
+
+    def last_practiced_relaxation_level(self) -> int | None:
+        """Return the relaxation level of the most recent practice log for this exercise."""
+        most_recent_log = self.practice_logs.order_by("-practiced_on").first()
+        return most_recent_log.relaxation_level if most_recent_log else None
+
+    def average_difficulty(self) -> float:
+        """Return the average difficulty across all practice logs, excluding NOT_RATED."""
+        result = self.practice_logs.filter(difficulty__gt=0).aggregate(avg=models.Avg("difficulty"))
+        return result["avg"] or 0.0
+
+    def average_relaxation_level(self) -> float:
+        """Return the average relaxation level across all practice logs, excluding NOT_RECORDED."""
+        result = self.practice_logs.filter(relaxation_level__gt=0).aggregate(avg=models.Avg("relaxation_level"))
+        return result["avg"] or 0.0
+
+    def first_practiced(self) -> datetime.date | None:
+        """Return the date of the earliest practice log for this exercise."""
+        earliest_log = self.practice_logs.order_by("practiced_on").first()
+        return earliest_log.practiced_on if earliest_log else None
 
 
 class PracticeLog(models.Model):
@@ -145,7 +215,7 @@ class PracticeLog(models.Model):
         indexes = (models.Index(fields=["exercise", "practiced_on"], name="idx_practice_exercise_date"),)
 
     def __repr__(self) -> str:
-        return f"<PracticeLog(id={self.id}, exercise={self.exercise.title}, practiced_on={self.practiced_on}, tempo={self.tempo})>"
+        return f"<PracticeLog(id={self.id}, exercise={self.exercise}, practiced_on={self.practiced_on}, tempo={self.tempo})>"
 
     def __str__(self) -> str:
-        return f"{self.exercise.title} - {self.practiced_on} @ {self.tempo} BPM"
+        return f"{self.exercise} - {self.practiced_on} @ {self.tempo} BPM"

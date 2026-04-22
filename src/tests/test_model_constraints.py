@@ -23,21 +23,21 @@ def test_section_order_can_repeat_across_books(book: Book) -> None:
     assert repeated_order_section.book_id == other_book.id
 
 
-def test_exercise_number_must_be_unique_per_section(section: Section) -> None:
-    ExerciseFactory(section=section, exercise_number=1)
+def test_exercise_identifier_must_be_unique_per_section(section: Section) -> None:
+    ExerciseFactory(section=section, identifier="1")
 
     with pytest.raises(IntegrityError):
-        ExerciseFactory(section=section, exercise_number=1)
+        ExerciseFactory(section=section, identifier="1")
 
 
-def test_exercise_number_can_repeat_across_sections(book: Book) -> None:
+def test_exercise_identifier_can_repeat_across_sections(book: Book) -> None:
     section_1 = SectionFactory(book=book, order=1)
     section_2 = SectionFactory(book=book, order=2)
 
-    ExerciseFactory(section=section_1, exercise_number=1)
-    repeated_number_exercise = ExerciseFactory(section=section_2, exercise_number=1)
+    ExerciseFactory(section=section_1, identifier="1")
+    repeated_identifier_exercise = ExerciseFactory(section=section_2, identifier="1")
 
-    assert repeated_number_exercise.section_id == section_2.id
+    assert repeated_identifier_exercise.section_id == section_2.id
 
 
 def test_tag_name_is_globally_unique() -> None:
@@ -49,7 +49,7 @@ def test_tag_name_is_globally_unique() -> None:
 
 def test_deleting_book_cascades_to_sections_exercises_and_practice_logs(book: Book) -> None:
     section = SectionFactory(book=book, order=1)
-    exercise = ExerciseFactory(section=section, exercise_number=1)
+    exercise = ExerciseFactory(section=section, identifier="1")
     PracticeLogFactory(exercise=exercise)
 
     book.delete()
