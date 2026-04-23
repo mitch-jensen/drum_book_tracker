@@ -32,12 +32,32 @@ ENV UV_PROJECT_ENVIRONMENT="/usr/local/" \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
+RUN --mount=type=bind,source=uv.lock,target=/app/uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
     --mount=type=cache,target=/root/.cache/uv \
-    uv sync --all-groups
+    uv sync --frozen
 
 COPY --chown=app:app ./src /app/src
 WORKDIR /app/src
 
 USER app
 CMD [ "python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "manage.py", "runserver", "0.0.0.0:8000" ]
+
+FROM mcr.microsoft.com/playwright/python:v1.58.0 AS playwright
+
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/" \
+    UV_LINK_MODE=copy
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+RUN --mount=type=bind,source=uv.lock,target=/app/uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --group test
+
+COPY ./src /app/src
+WORKDIR /app/src
+
+CMD ["uv", "run", "pytest"]
