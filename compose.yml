@@ -16,8 +16,12 @@ services:
         condition: service_healthy
     healthcheck:
       test:
-        - "CMD-SHELL"
-        - "nc -z localhost 8000"
+        - "CMD"
+        - "python"
+        - "manage.py"
+        - "health_check"
+        - "health_check-node"
+        - "backend:8000"
       interval: 10s
       timeout: 5s
       retries: 5
