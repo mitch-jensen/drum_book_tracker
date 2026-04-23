@@ -9,7 +9,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: playwright
-    working_dir: /app/src
     environment:
       BASE_URL: http://backend:8000
       SECRET_KEY: ${SECRET_KEY:-insecure-test-secret-key}
