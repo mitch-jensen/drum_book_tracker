@@ -1,0 +1,25 @@
+---
+services:
+  backend:
+    build:
+      target: development
+
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: playwright
+    working_dir: /app/src
+    environment:
+      BASE_URL: http://backend:8000
+      SECRET_KEY: ${SECRET_KEY:-insecure-test-secret-key}
+      DATABASE_NAME: ${DATABASE_NAME:-test_db}
+      DATABASE_USER: ${DATABASE_USER:-test_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-test_password}
+    depends_on:
+      backend:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    profiles:
+      - playwright

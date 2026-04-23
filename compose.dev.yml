@@ -3,9 +3,12 @@ services:
   backend:
     build:
       target: development
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8000:8000"
       - "127.0.0.1:5678:5678"
+    volumes:
+      - media_data:/app/src/media
     develop:
       watch:
         - action: sync
@@ -14,5 +17,12 @@ services:
         - action: rebuild
           path: pyproject.toml
   db:
+    restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/18/docker
+
+volumes:
+  db_data:
+  media_data:
