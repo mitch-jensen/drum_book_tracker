@@ -19,7 +19,7 @@ RUN --mount=type=bind,from=requirements,source=/requirements/requirements.txt,ta
     --mount=type=cache,target=/root/.cache/pip \
     pip install -r /app/requirements.txt
 
-COPY --chown=app:app ./src /app/src
+COPY --chown=app:app --exclude=tests --exclude=tests/** ./src /app/src
 WORKDIR /app/src
 
 USER app
@@ -37,13 +37,13 @@ RUN --mount=type=bind,source=uv.lock,target=/app/uv.lock \
     --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-COPY --chown=app:app ./src /app/src
+COPY --chown=app:app --exclude=tests --exclude=tests/** ./src /app/src
 WORKDIR /app/src
 
 USER app
 CMD [ "python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "manage.py", "runserver", "0.0.0.0:8000" ]
 
-FROM mcr.microsoft.com/playwright/python:v1.58.0 AS playwright
+FROM python:3.14-bookworm AS test
 
 ENV UV_PROJECT_ENVIRONMENT="/usr/local/" \
     UV_LINK_MODE=copy
@@ -55,9 +55,11 @@ WORKDIR /app
 RUN --mount=type=bind,source=uv.lock,target=/app/uv.lock \
     --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
     --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --group test
+    uv sync --frozen --group test && \
+    playwright install --with-deps
 
 COPY ./src /app/src
+COPY pyproject.toml /app/pyproject.toml
 WORKDIR /app/src
 
-CMD ["uv", "run", "pytest"]
+CMD ["/bin/bash"]
