@@ -70,6 +70,27 @@ class TestPracticeLogForm:
         assert form.fields["page_number"].initial == 17
         assert list(form.fields["exercise"].queryset) == [exercise, second_exercise]
 
+    def test_uses_bound_data_querysets_when_editing_existing_log(self) -> None:
+        book = BookFactory(title="Stick Control", page_count=190)
+        section_one = SectionFactory(book=book, title="Chapter 1", order=1)
+        section_two = SectionFactory(book=book, title="Chapter 2", order=2)
+        original_exercise = ExerciseFactory(section=section_one, identifier="1", page_number=17)
+        target_exercise = ExerciseFactory(section=section_two, identifier="2", page_number=23)
+        ExerciseFactory(section=section_one, identifier="3", page_number=23)
+        log = PracticeLogFactory(exercise=original_exercise)
+
+        form = PracticeLogForm(
+            data={
+                "book": str(book.pk),
+                "section": str(section_two.pk),
+                "page_number": "23",
+            },
+            instance=log,
+        )
+
+        assert list(form.fields["section"].queryset) == [section_one, section_two]
+        assert list(form.fields["exercise"].queryset) == [target_exercise]
+
     def test_rejects_page_number_above_book_page_count(self) -> None:
         book = BookFactory(title="Stick Control", page_count=10)
         section = SectionFactory(book=book, title="Chapter 1", order=1)

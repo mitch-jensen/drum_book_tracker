@@ -8,83 +8,81 @@ from django.urls import reverse_lazy
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 
 
-class AuthorForm(forms.ModelForm):
+class CrispyNoTagMixin:
+    """Provide shared crispy helper setup for forms rendered inside outer form tags."""
+
+    def init_helper(self, *layout_fields: str) -> None:
+        """Initialize a FormHelper with no form tag and a simple layout."""
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(*layout_fields)
+
+
+class BootstrapFieldClassMixin:
+    """Apply Bootstrap-compatible widget classes to all fields unless pre-set."""
+
+    def apply_bootstrap_field_classes(self) -> None:
+        """Apply 'form-select' to select widgets and 'form-control' to others, unless already set."""
+        for field in self.fields.values():
+            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+                field.widget.attrs.setdefault("class", "form-select")
+            else:
+                field.widget.attrs.setdefault("class", "form-control")
+
+
+class AuthorForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Author
         fields = ("first_name", "last_name")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout("first_name", "last_name")
-        for field in self.fields.values():
-            field.widget.attrs.setdefault("class", "form-control")
+        self.init_helper("first_name", "last_name")
+        self.apply_bootstrap_field_classes()
 
 
-class TagForm(forms.ModelForm):
+class TagForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Tag
         fields = ("name",)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout("name")
-        for field in self.fields.values():
-            field.widget.attrs.setdefault("class", "form-control")
+        self.init_helper("name")
+        self.apply_bootstrap_field_classes()
 
 
-class BookForm(forms.ModelForm):
+class BookForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Book
         fields = ("title", "page_count", "authors")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout("title", "page_count", "authors")
-        for field in self.fields.values():
-            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
-                field.widget.attrs.setdefault("class", "form-select")
-            else:
-                field.widget.attrs.setdefault("class", "form-control")
+        self.init_helper("title", "page_count", "authors")
+        self.apply_bootstrap_field_classes()
 
 
-class SectionForm(forms.ModelForm):
+class SectionForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Section
         fields = ("book", "title", "order")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout("book", "title", "order")
-        for field in self.fields.values():
-            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
-                field.widget.attrs.setdefault("class", "form-select")
-            else:
-                field.widget.attrs.setdefault("class", "form-control")
+        self.init_helper("book", "title", "order")
+        self.apply_bootstrap_field_classes()
 
 
-class ExerciseForm(forms.ModelForm):
+class ExerciseForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Exercise
         fields = ("section", "identifier", "description", "page_number", "tags")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout("section", "identifier", "description", "page_number", "tags")
-        for field in self.fields.values():
-            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
-                field.widget.attrs.setdefault("class", "form-select")
-            else:
-                field.widget.attrs.setdefault("class", "form-control")
+        self.init_helper("section", "identifier", "description", "page_number", "tags")
+        self.apply_bootstrap_field_classes()
 
 
 class ExerciseTagFilterForm(forms.Form):
@@ -150,7 +148,7 @@ class BulkExerciseCreateForm(forms.Form):
         return cleaned
 
 
-class PracticeLogForm(forms.ModelForm):
+class PracticeLogForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     book = forms.ModelChoiceField(
         queryset=Book.objects.order_by("title"),
         required=False,
@@ -194,9 +192,7 @@ class PracticeLogForm(forms.ModelForm):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_tag = False
-        self.helper.layout = Layout(
+        self.init_helper(
             "book",
             "section",
             "page_number",
@@ -211,16 +207,16 @@ class PracticeLogForm(forms.ModelForm):
         book_id = None
         section_id = None
 
-        if not self.instance._state.adding:  # noqa: SLF001
+        if self.data:
+            book_id = self.data.get("book") or None
+            section_id = self.data.get("section") or None
+        elif not self.instance._state.adding:  # noqa: SLF001
             book_id = self.instance.exercise.section.book_id
             section_id = self.instance.exercise.section_id
             self.fields["book"].initial = book_id
             self.fields["section"].initial = section_id
             if self.instance.exercise.page_number:
                 self.fields["page_number"].initial = self.instance.exercise.page_number
-        elif self.data:
-            book_id = self.data.get("book") or None
-            section_id = self.data.get("section") or None
 
         if book_id:
             self.fields["section"].queryset = Section.objects.filter(book_id=book_id).order_by("order")
@@ -240,11 +236,7 @@ class PracticeLogForm(forms.ModelForm):
         else:
             self.fields["exercise"].queryset = Exercise.objects.none()
 
-        for field in self.fields.values():
-            if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
-                field.widget.attrs.setdefault("class", "form-select")
-            else:
-                field.widget.attrs.setdefault("class", "form-control")
+        self.apply_bootstrap_field_classes()
 
     def clean_page_number(self) -> int | None:
         """Validate page_number is within the selected book's page range."""
