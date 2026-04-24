@@ -19,7 +19,7 @@ from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Ta
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
-    from django.http import HttpResponse
+    from django.http import HttpResponse, QueryDict
 
     from core.htmx import HtmxHttpRequest
 
@@ -360,23 +360,23 @@ def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return redirect("exercise-detail", pk=pk)
 
 
-def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] | list[str]:
+def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> dict[int, int] | list[str]:
     """Parse and validate page range rows from POST data.
 
     Returns a dict mapping exercise number → page number on success,
     or a list of error messages on failure.
     """
-    range_starts = post_data.getlist("range_start")
-    range_ends = post_data.getlist("range_end")
-    range_pages = post_data.getlist("range_page")
+    range_start = post_data.getlist("range_start")
+    range_end = post_data.getlist("range_end")
+    range_page = post_data.getlist("range_page")
 
-    if not range_starts:
+    if not range_start:
         return ["At least one page range is required."]
 
     errors: list[str] = []
     parsed: list[tuple[int, int, int]] = []
 
-    for i, (rs, re_, rp) in enumerate(zip(range_starts, range_ends, range_pages, strict=False), 1):
+    for i, (rs, re_, rp) in enumerate(zip(range_start, range_end, range_page, strict=False), 1):
         if not rs or not re_ or not rp:
             errors.append(f"Page range {i}: all fields are required.")
             continue
