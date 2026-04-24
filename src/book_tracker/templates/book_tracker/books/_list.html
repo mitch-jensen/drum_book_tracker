@@ -1,0 +1,20 @@
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Pages</th>
+            <th>Authors</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for book in books %}
+            {% include "book_tracker/books/_row.html" with book=book only %}
+        {% empty %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">No books yet.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div id="book-form-container">{% include "book_tracker/books/_form.html" %}</div>

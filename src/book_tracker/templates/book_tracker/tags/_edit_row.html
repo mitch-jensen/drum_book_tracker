@@ -11,7 +11,8 @@
                 hx-post="{% url 'tag-update' tag.id %}"
                 hx-target="#tag-{{ tag.id }}"
                 hx-swap="outerHTML"
-                hx-include="closest tr">Save</button>
+                hx-include="closest tr"
+                hx-disabled-elt="this">Save</button>
         <button class="btn btn-sm btn-outline-secondary"
                 hx-get="{% url 'tag-row' tag.id %}"
                 hx-target="#tag-{{ tag.id }}"

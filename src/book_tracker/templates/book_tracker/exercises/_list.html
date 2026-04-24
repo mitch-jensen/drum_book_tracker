@@ -1,0 +1,23 @@
+{% include "book_tracker/exercises/_filters.html" %}
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Section</th>
+            <th>Identifier</th>
+            <th>Description</th>
+            <th>Page</th>
+            <th>Tags</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for exercise in exercises %}
+            {% include "book_tracker/exercises/_row.html" with exercise=exercise only %}
+        {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">No exercises yet.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div id="exercise-form-container">{% include "book_tracker/exercises/_form.html" %}</div>

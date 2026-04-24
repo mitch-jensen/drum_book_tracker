@@ -1,0 +1,7 @@
+<option value="">---------</option>
+{% for section in sections %}<option value="{{ section.pk }}">{{ section }}</option>{% endfor %}
+<select id="{{ exercise_target }}"
+        hx-swap-oob="innerHTML:#{{ exercise_target }}">
+    <option value="">---------</option>
+    {% for exercise in exercises %}<option value="{{ exercise.pk }}">{{ exercise }}</option>{% endfor %}
+</select>

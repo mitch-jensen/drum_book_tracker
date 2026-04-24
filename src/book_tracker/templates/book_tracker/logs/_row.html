@@ -1,0 +1,17 @@
+<tr id="log-{{ log.id }}">
+    <td>{{ log.exercise.section.book.title }}</td>
+    <td>{{ log.exercise.section.title }}</td>
+    <td>{{ log.exercise.page_number|default:"—" }}</td>
+    <td>{{ log.exercise }}</td>
+    <td>{{ log.practiced_on }}</td>
+    <td>{{ log.tempo }} BPM</td>
+    <td>{{ log.get_difficulty_display }}</td>
+    <td>{{ log.get_relaxation_level_display }}</td>
+    <td>{{ log.notes|truncatewords:10|default:"—" }}</td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'log-edit' log.id %}"
+                hx-target="#log-{{ log.id }}"
+                hx-swap="outerHTML">Edit</button>
+    </td>
+</tr>

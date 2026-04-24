@@ -17,7 +17,8 @@
                 hx-post="{% url 'book-update' book.id %}"
                 hx-target="#book-{{ book.id }}"
                 hx-swap="outerHTML"
-                hx-include="closest tr">Save</button>
+                hx-include="closest tr"
+                hx-disabled-elt="this">Save</button>
         <button class="btn btn-sm btn-outline-secondary"
                 hx-get="{% url 'book-row' book.id %}"
                 hx-target="#book-{{ book.id }}"

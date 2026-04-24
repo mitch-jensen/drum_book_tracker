@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-    Bulk Create Exercises - Drum Book Tracker
+    Bulk Create Exercises | {{ block.super }}
 {% endblock title %}
 {% block content %}
     <nav aria-label="breadcrumb">
@@ -54,7 +54,7 @@
         <p class="text-muted small">Assign page numbers to exercise ranges. All exercises must be covered.</p>
         <div id="page-ranges">
             {% for range_start, range_end, range_page in page_ranges %}
-                {% include "book_tracker/page_range_row.html" %}
+                {% include "book_tracker/exercises/_page_range_row.html" %}
             {% endfor %}
         </div>
         <button type="button"

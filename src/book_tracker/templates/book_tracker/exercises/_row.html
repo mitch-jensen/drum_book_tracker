@@ -1,0 +1,15 @@
+<tr id="exercise-{{ exercise.id }}">
+    <td>{{ exercise.section }}</td>
+    <td>{{ exercise.identifier|default:"—" }}</td>
+    <td>{{ exercise.description|default:"—"|truncatewords:10 }}</td>
+    <td>{{ exercise.page_number|default:"—" }}</td>
+    <td>{{ exercise.tags.all|join:", "|default:"—" }}</td>
+    <td class="text-end">
+        <a class="btn btn-sm btn-outline-info"
+           href="{% url 'exercise-detail' exercise.id %}">View</a>
+        <button class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'exercise-edit' exercise.id %}"
+                hx-target="#exercise-{{ exercise.id }}"
+                hx-swap="outerHTML">Edit</button>
+    </td>
+</tr>
