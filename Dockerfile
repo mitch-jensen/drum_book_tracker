@@ -62,4 +62,4 @@ COPY ./src /app/src
 COPY pyproject.toml /app/pyproject.toml
 WORKDIR /app/src
 
-CMD ["/bin/bash"]
+ENTRYPOINT ["/bin/bash"]

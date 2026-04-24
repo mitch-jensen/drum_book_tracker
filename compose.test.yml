@@ -3,6 +3,11 @@ services:
   backend:
     build:
       target: test
+    command:
+      - "-lc"
+      - "sleep infinity"
+    healthcheck:
+      disable: true
     environment:
       BASE_URL: http://backend:8000
       SECRET_KEY: insecure-test-secret-key  # pragma: allowlist secret
