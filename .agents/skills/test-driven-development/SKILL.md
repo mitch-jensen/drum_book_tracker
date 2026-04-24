@@ -63,7 +63,7 @@ docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-ti
 Run tests in the backend container:
 
 ```bash
-docker compose -f compose.yml -f compose.test.yml exec backend pytest
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest
 ```
 
 After finishing each test run:
@@ -146,7 +146,7 @@ Vague name, tests mock not code
 ```bash
 docker compose -f compose.yml -f compose.test.yml down
 docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec backend pytest tests/test_target.py::test_case_name -q
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest tests/test_target.py::test_case_name -q
 docker compose -f compose.yml -f compose.test.yml down
 ```
 
@@ -201,7 +201,7 @@ Don't add features, refactor other code, or "improve" beyond the test.
 ```bash
 docker compose -f compose.yml -f compose.test.yml down
 docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec backend pytest tests/test_target.py::test_case_name -q
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest tests/test_target.py::test_case_name -q
 docker compose -f compose.yml -f compose.test.yml down
 ```
 
@@ -339,7 +339,7 @@ def test_submit_form_rejects_empty_email(client):
 ```bash
 $ docker compose -f compose.yml -f compose.test.yml down
 $ docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-$ docker compose -f compose.yml -f compose.test.yml exec backend pytest tests/test_submit_form.py::test_submit_form_rejects_empty_email -q
+$ docker compose -f compose.yml -f compose.test.yml exec -T backend pytest tests/test_submit_form.py::test_submit_form_rejects_empty_email -q
 FAIL: assert 200 == 400
 $ docker compose -f compose.yml -f compose.test.yml down
 ```
@@ -360,7 +360,7 @@ def submit_form(request):
 ```bash
 $ docker compose -f compose.yml -f compose.test.yml down
 $ docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-$ docker compose -f compose.yml -f compose.test.yml exec backend pytest tests/test_submit_form.py::test_submit_form_rejects_empty_email -q
+$ docker compose -f compose.yml -f compose.test.yml exec -T backend pytest tests/test_submit_form.py::test_submit_form_rejects_empty_email -q
 PASS
 $ docker compose -f compose.yml -f compose.test.yml down
 ```
@@ -375,7 +375,7 @@ After behavior tests are green, run coverage and close gaps using `pytest-covera
 ```bash
 docker compose -f compose.yml -f compose.test.yml down
 docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec backend pytest --cov --cov-report=annotate:cov_annotate
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest --cov --cov-report=annotate:cov_annotate
 docker compose -f compose.yml -f compose.test.yml down
 ```
 

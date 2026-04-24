@@ -17,7 +17,7 @@ Run tests in Docker only, and always use the required lifecycle:
 ```bash
 docker compose -f compose.yml -f compose.test.yml down
 docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec backend pytest
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest
 docker compose -f compose.yml -f compose.test.yml down
 ```
 
@@ -259,7 +259,7 @@ After GREEN, run coverage and close gaps using `pytest-coverage`:
 ```bash
 docker compose -f compose.yml -f compose.test.yml down
 docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec backend pytest --cov --cov-report=annotate:cov_annotate
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest --cov --cov-report=annotate:cov_annotate
 docker compose -f compose.yml -f compose.test.yml down
 ```
 
