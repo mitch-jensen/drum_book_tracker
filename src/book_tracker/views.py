@@ -399,11 +399,9 @@ def _parse_page_ranges(post_data: dict, start: int, end: int) -> dict[int, int] 
 
     # Check for overlaps
     parsed.sort()
-    for i in range(len(parsed) - 1):
-        if parsed[i][1] >= parsed[i + 1][0]:
-            errors.append(
-                f"Page ranges overlap: {parsed[i][0]}-{parsed[i][1]} and {parsed[i + 1][0]}-{parsed[i + 1][1]}.",
-            )
+    errors.extend(
+        f"Page ranges overlap: {parsed[i][0]}-{parsed[i][1]} and {parsed[i + 1][0]}-{parsed[i + 1][1]}." for i in range(len(parsed) - 1) if parsed[i][1] >= parsed[i + 1][0]
+    )
 
     if errors:
         return errors
@@ -533,7 +531,7 @@ def practice_log_list(request: HtmxHttpRequest) -> HttpResponse:
 def practice_log_create(request: HtmxHttpRequest) -> HttpResponse:
     form = PracticeLogForm(request.POST)
     if form.is_valid():
-        log = form.save()
+        form.save()
         logs = PracticeLog.objects.select_related("exercise__section__book").order_by("-practiced_on", "-pk")
         response = render(
             request,
