@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "django-expert": {
+      "source": "vintasoftware/django-ai-plugins",
+      "sourceType": "github",
+      "computedHash": "a6b8c224017570496d688a526fcbea74025a01cc90d9afb0977bfcc1f76af306"
+    },
+    "django-forms": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "b62a174ab918b81faa442f706881e4cda421f13ce2a73237bff1fadf84dc252a"
+    },
+    "django-templates": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "0f3370f6c42d21746314ecdfa3a56993c02fee6739fcaae8a57670c8ffc33e8a"
+    },
+    "docker-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "7a0cf3e3a5f8d18ddb452c784ac965aa40b1bfa2a736c5689d252328f18017d1"
+    },
+    "htmx": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "6e1f97a1af33384fe4e9ea60078770bacdacfb48d26a601c2bf17c61447c8532"
+    },
+    "htmx-patterns": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "43988198c10c8be82136aed14a7ea117c6136bcb2992f3eb4318adeb680e6bfa"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
+    }
+  }
+}

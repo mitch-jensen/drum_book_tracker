@@ -14,7 +14,16 @@ services:
   backend:
     build:
       target: production
+    restart: unless-stopped
     volumes:
+      - media_data:/app/src/media
       - static:/app/src/staticfiles
+  db:
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/18/docker
+
 volumes:
+  db_data:
+  media_data:
   static:

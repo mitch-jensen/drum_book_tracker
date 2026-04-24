@@ -45,6 +45,7 @@ INSTALLED_APPS: list[str] = [
     "django_htmx",
     "crispy_forms",
     "crispy_bootstrap5",
+    "health_check",
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

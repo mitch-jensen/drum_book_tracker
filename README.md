@@ -84,10 +84,25 @@ python manage.py runserver
 
 ## Tests And Checks
 
-Run the test suite:
+Run the test suite locally:
 
 ```bash
 uv run pytest
+```
+
+Run the test suite in Docker (matches CI):
+
+```bash
+docker compose -f compose.yml -f compose.test.yml down
+docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest
+docker compose -f compose.yml -f compose.test.yml down
+```
+
+Run with coverage:
+
+```bash
+docker compose -f compose.yml -f compose.test.yml exec -T backend pytest --cov --cov-report=term-missing
 ```
 
 Run linting:
