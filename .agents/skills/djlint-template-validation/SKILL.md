@@ -16,26 +16,17 @@ description: Validate Django templates using djlint for HTML/template linting. U
 
 ## Workflow
 
-### 1. Spin Up Docker Test Environment
+### 1. Local-Only Policy (Critical)
 
-Start the Docker test environment (database and backend container must be healthy):
-
-```bash
-docker compose -f compose.yml -f compose.test.yml down
-docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-```
-
-Wait for containers to reach "Healthy" status (typically ~10-15 seconds, up to 90 seconds if building from scratch).
+Do not run Docker or `docker compose` commands for template linting unless the user explicitly asks for Docker execution in the current chat.
 
 ### 2. Run djlint Validation
 
-Execute djlint on the templates directory in the backend container:
+Execute djlint on the templates directory locally using `uv`:
 
 ```bash
-docker compose -f compose.yml -f compose.test.yml exec -T backend djlint book_tracker/templates
+uv run djlint src/book_tracker/templates
 ```
-
-The `-T` flag disables pseudo-TTY allocation (required for non-interactive execution).
 
 ### 3. Review djlint Output
 
@@ -69,33 +60,24 @@ Common djlint violations and fixes:
 
 ### 5. Tear Down Environment
 
-Clean up the test environment after validation:
-
-```bash
-docker compose -f compose.yml -f compose.test.yml down
-```
+No environment teardown is required for local validation.
 
 ## Automated Workflow (Single Command)
 
-For convenience, run the entire workflow in one command:
+For convenience, run lint and optional reformat locally:
 
 ```bash
-docker compose -f compose.yml -f compose.test.yml down && \
-docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60 && \
-docker compose -f compose.yml -f compose.test.yml exec -T backend djlint book_tracker/templates && \
-docker compose -f compose.yml -f compose.test.yml down
+uv run djlint src/book_tracker/templates && \
+uv run djlint src/book_tracker/templates --reformat
 ```
 
 This:
-1. Tears down any existing containers
-2. Builds and starts fresh test environment
-3. Waits for containers to be healthy
-4. Runs djlint validation
-5. Cleans up afterward
+1. Validates templates for lint issues
+2. Optionally reformats templates for style consistency
 
 **Terminal Setup:**
-- Run in `sync` mode with at least 60 second timeout to allow for container startup
-- Adjust timeout if your Docker build is slower: `timeout_ms = startup_time + lint_time + teardown_time`
+- Run in `sync` mode.
+- A short timeout is typically sufficient for local linting.
 
 ## Configuration
 
@@ -126,13 +108,9 @@ Common options:
 
 ## Troubleshooting
 
-**"Container is not running" error**
-- Ensure `docker compose -f compose.yml -f compose.test.yml up --build -d --wait` completed successfully
-- Check container logs: `docker compose -f compose.yml -f compose.test.yml logs backend`
-
 **"djlint: command not found"**
-- djlint is installed in the backend container (check Dockerfile)
-- Ensure you're using `exec -T backend` (targeting the correct container)
+- Install dev dependencies locally: `uv sync --all-groups`
+- Re-run with `uv run djlint src/book_tracker/templates`
 
 **False positives with Django template tags**
 - djlint may flag Django-specific syntax as errors (e.g., `{% if %}`, `{{ variable }}`)

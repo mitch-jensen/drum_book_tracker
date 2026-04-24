@@ -10,19 +10,6 @@ Tests must verify real behavior, not mock behavior. Mocks are a means to isolate
 
 **Following strict TDD prevents these anti-patterns.**
 
-## Python/Django Test Execution Rule
-
-Run tests in Docker only, and always use the required lifecycle:
-
-```bash
-docker compose -f compose.yml -f compose.test.yml down
-docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec -T backend pytest
-docker compose -f compose.yml -f compose.test.yml down
-```
-
-Use focused test selection during RED/GREEN loops.
-
 ## The Iron Laws
 
 ```
@@ -35,44 +22,43 @@ Use focused test selection during RED/GREEN loops.
 
 **The violation:**
 ```python
-# BAD: Testing that the mock exists
-from unittest.mock import patch
+# BAD: Testing that the mock exists instead of user-visible behavior
+def test_dashboard_shows_sidebar_mock(client, mocker):
+    mocker.patch("book_tracker.views.render_sidebar", return_value="<div id='sidebar-mock'></div>")
 
+    response = client.get("/logs/")
 
-def test_book_list_renders_sidebar_mock(client):
-    with patch("book_tracker.views.render_sidebar"):
-        response = client.get("/books/")
-    assert "sidebar-mock" in response.content.decode()
+    assert b"sidebar-mock" in response.content
 ```
 
 **Why this is wrong:**
-- You're verifying the mock works, not that the view/template works
-- Test passes when mock marker is present, fails when it is not
+- You're verifying the mock works, not that the component works
+- Test passes when mock is present, fails when it's not
 - Tells you nothing about real behavior
 
 **your human partner's correction:** "Are we testing the behavior of a mock?"
 
 **The fix:**
 ```python
-# GOOD: Test real behavior
-import pytest
+# GOOD: Test real page behavior (what the user gets)
+def test_logs_page_renders_navigation(auth_client):
+    response = auth_client.get("/logs/")
 
-
-@pytest.mark.django_db
-def test_books_page_contains_navigation(client):
-    response = client.get("/books/")
     assert response.status_code == 200
-    assert b"Books" in response.content
+    assert b"<nav" in response.content
+
+# OR if sidebar must be mocked for isolation:
+# Don't assert on the mock element itself - assert page behavior
 ```
 
 ### Gate Function
 
 ```
-BEFORE asserting on any mocked output:
+BEFORE asserting on any mock element:
   Ask: "Am I testing real component behavior or just mock existence?"
 
   IF testing mock existence:
-    STOP - Delete the assertion or remove the mock
+    STOP - Delete the assertion or unmock the component
 
   Test real behavior instead
 ```
@@ -81,34 +67,44 @@ BEFORE asserting on any mocked output:
 
 **The violation:**
 ```python
-# BAD: cleanup() only used in tests
-class PracticeSession:
-    def cleanup_for_tests(self):
-        self._temp_files.clear()
-        self._cache.clear()
+# BAD: destroy() only used in tests
+class Session:
+    def destroy(self):  # Looks like production API!
+        if self._workspace_manager:
+            self._workspace_manager.destroy_workspace(self.id)
+        # ... cleanup
 
 
-def test_session_teardown():
-    session = PracticeSession()
-    session.cleanup_for_tests()
+# In tests
+@pytest.fixture(autouse=True)
+def cleanup(session):
+    yield
+    session.destroy()
 ```
 
 **Why this is wrong:**
 - Production class polluted with test-only code
-- Dangerous if accidentally used in production flow
+- Dangerous if accidentally called in production
 - Violates YAGNI and separation of concerns
+- Confuses object lifecycle with entity lifecycle
 
 **The fix:**
 ```python
-# GOOD: Put test cleanup in test utilities/conftest fixtures
-import pytest
+# GOOD: Test utilities handle test cleanup
+# Session has no destroy() - it's stateless in production
+
+# In test_utils.py
+def cleanup_session(session: Session, workspace_manager) -> None:
+    workspace = session.get_workspace_info()
+    if workspace:
+        workspace_manager.destroy_workspace(workspace.id)
 
 
-@pytest.fixture
-def practice_session(tmp_path):
-    session = create_practice_session(tmp_path)
-    yield session
-    cleanup_practice_session(session)
+# In tests
+@pytest.fixture(autouse=True)
+def cleanup(session, workspace_manager):
+    yield
+    cleanup_session(session, workspace_manager)
 ```
 
 ### Gate Function
@@ -119,9 +115,9 @@ BEFORE adding any method to production class:
 
   IF yes:
     STOP - Don't add it
-    Put it in test utilities or fixtures instead
+    Put it in test utilities instead
 
-  Ask: "Does this class own this resource lifecycle?"
+  Ask: "Does this class own this resource's lifecycle?"
 
   IF no:
     STOP - Wrong class for this method
@@ -131,39 +127,38 @@ BEFORE adding any method to production class:
 
 **The violation:**
 ```python
-# BAD: Mock breaks side effects test depends on
-from unittest.mock import patch
+# BAD: Mock breaks test logic
+def test_detects_duplicate_server(config, mocker):
+    # Mock prevents config write that test depends on!
+    mocker.patch.object(
+        ToolCatalog,
+        "discover_and_cache_tools",
+        return_value=None,
+    )
 
-
-@patch("book_tracker.services.sync_notation")
-def test_duplicate_exercise_detection(mock_sync, client):
-    mock_sync.return_value = None  # Removes behavior that writes identifier
-
-    client.post("/exercises/create/", data={"identifier": "RUD-001"})
-    response = client.post("/exercises/create/", data={"identifier": "RUD-001"})
-
-    assert response.status_code == 400  # May fail for wrong reason
+    add_server(config)
+    add_server(config)  # Should raise - but won't!
 ```
 
 **Why this is wrong:**
-- Mocked function may remove side effects the test relies on
-- Over-mocking to "be safe" breaks real behavior
-- Test can pass/fail for the wrong reason
+- Mocked method had side effect test depended on (writing config)
+- Over-mocking to "be safe" breaks actual behavior
+- Test passes for wrong reason or fails mysteriously
 
 **The fix:**
 ```python
-# GOOD: Mock only slow/external boundary and keep required side effects
-from unittest.mock import patch
+import pytest
 
 
-@patch("book_tracker.integrations.audiveris_client.run")
-def test_duplicate_exercise_detection(mock_audiveris, client):
-    mock_audiveris.return_value = {"status": "ok"}
+# GOOD: Mock at correct level
+def test_detects_duplicate_server(config, mocker):
+    # Mock the slow part, preserve behavior test needs
+    mocker.patch.object(MCPServerManager, "start", return_value=None)
 
-    client.post("/exercises/create/", data={"identifier": "RUD-001"})
-    response = client.post("/exercises/create/", data={"identifier": "RUD-001"})
+    add_server(config)  # Config written
 
-    assert response.status_code == 400
+    with pytest.raises(DuplicateServerError):
+        add_server(config)
 ```
 
 ### Gate Function
@@ -177,13 +172,19 @@ BEFORE mocking any method:
   3. Ask: "Do I fully understand what this test needs?"
 
   IF depends on side effects:
-    Mock at lower level (actual external/slow operation)
-    OR use a test double that preserves required behavior
+    Mock at lower level (the actual slow/external operation)
+    OR use test doubles that preserve necessary behavior
+    NOT the high-level method the test depends on
 
   IF unsure what test depends on:
-    Run with real implementation first
-    Observe required behavior
-    THEN add minimal mocking
+    Run test with real implementation FIRST
+    Observe what actually needs to happen
+    THEN add minimal mocking at the right level
+
+  Red flags:
+    - "I'll mock this to be safe"
+    - "This might be slow, better mock it"
+    - Mocking without understanding the dependency chain
 ```
 
 ## Anti-Pattern 4: Incomplete Mocks
@@ -191,28 +192,31 @@ BEFORE mocking any method:
 **The violation:**
 ```python
 # BAD: Partial mock - only fields you think you need
-mock_result = {
-    "status": "ok",
-    "notation": {"page": 1},
-    # Missing fields your code may use later (e.g., "confidence", "source")
+mock_response = {
+    "status": "success",
+    "data": {"user_id": "123", "name": "Alice"},
+    # Missing: metadata that downstream code uses
 }
+
+# Later: breaks when code accesses response["metadata"]["request_id"]
 ```
 
 **Why this is wrong:**
-- Partial mocks hide structural assumptions
-- Downstream code may depend on omitted fields
-- Tests pass but integration fails
+- **Partial mocks hide structural assumptions** - You only mocked fields you know about
+- **Downstream code may depend on fields you didn't include** - Silent failures
+- **Tests pass but integration fails** - Mock incomplete, real API complete
+- **False confidence** - Test proves nothing about real behavior
 
-**The Iron Rule:** Mock the complete data structure the real dependency returns.
+**The Iron Rule:** Mock the COMPLETE data structure as it exists in reality, not just fields your immediate test uses.
 
 **The fix:**
 ```python
-# GOOD: Mirror complete response structure
-mock_result = {
-    "status": "ok",
-    "notation": {"page": 1, "system": 2},
-    "confidence": 0.98,
-    "source": "audiveris",
+# GOOD: Mirror real API completeness
+mock_response = {
+    "status": "success",
+    "data": {"user_id": "123", "name": "Alice"},
+    "metadata": {"request_id": "req-789", "timestamp": 1234567890},
+    # All fields real API returns
 }
 ```
 
@@ -220,93 +224,89 @@ mock_result = {
 
 ```
 BEFORE creating mock responses:
-  Check: "What fields does the real response contain?"
+  Check: "What fields does the real API response contain?"
 
   Actions:
-    1. Inspect docs/examples/real output
-    2. Include all fields consumed downstream
-    3. Keep schema parity with production response
+    1. Examine actual API response from docs/examples
+    2. Include ALL fields system might consume downstream
+    3. Verify mock matches real response schema completely
+
+  Critical:
+    If you're creating a mock, you must understand the ENTIRE structure
+    Partial mocks fail silently when code depends on omitted fields
+
+  If uncertain: Include all documented fields
 ```
 
 ## Anti-Pattern 5: Integration Tests as Afterthought
 
 **The violation:**
 ```
-Implementation complete
-No tests written
+✅ Implementation complete
+❌ No tests written
 "Ready for testing"
 ```
 
 **Why this is wrong:**
-- Testing is part of implementation, not follow-up
-- TDD would have caught this earlier
+- Testing is part of implementation, not optional follow-up
+- TDD would have caught this
 - Can't claim complete without tests
 
 **The fix:**
 ```
 TDD cycle:
-1. Write failing pytest test
-2. Run in Docker and verify RED
-3. Implement minimal code to pass
-4. Re-run in Docker and verify GREEN
-5. Refactor while staying green
+1. Write failing test
+2. Implement to pass
+3. Refactor
+4. THEN claim complete
 ```
-
-## Coverage Is Part of Done
-
-After GREEN, run coverage and close gaps using `pytest-coverage`:
-
-```bash
-docker compose -f compose.yml -f compose.test.yml down
-docker compose -f compose.yml -f compose.test.yml up --build -d --wait --wait-timeout 60
-docker compose -f compose.yml -f compose.test.yml exec -T backend pytest --cov --cov-report=annotate:cov_annotate
-docker compose -f compose.yml -f compose.test.yml down
-```
-
-Use `cov_annotate` output and add tests first for lines marked with `!`.
 
 ## When Mocks Become Too Complex
 
 **Warning signs:**
 - Mock setup longer than test logic
 - Mocking everything to make test pass
+- Mocks missing methods real components have
 - Test breaks when mock changes
 
 **your human partner's question:** "Do we need to be using a mock here?"
 
-**Consider:** Integration tests with real Django components are often simpler than deep mock trees.
+**Consider:** Integration tests with real components often simpler than complex mocks
 
 ## TDD Prevents These Anti-Patterns
 
 **Why TDD helps:**
-1. **Write test first** -> Forces clarity on intended behavior
-2. **Watch it fail** -> Confirms test is meaningful
-3. **Minimal implementation** -> Prevents test-only production code
-4. **Minimal mocking** -> Encourages understanding real dependencies
+1. **Write test first** → Forces you to think about what you're actually testing
+2. **Watch it fail** → Confirms test tests real behavior, not mocks
+3. **Minimal implementation** → No test-only methods creep in
+4. **Real dependencies** → You see what the test actually needs before mocking
+
+**If you're testing mock behavior, you violated TDD** - you added mocks without watching test fail against real code first.
 
 ## Quick Reference
 
 | Anti-Pattern | Fix |
 |--------------|-----|
-| Assert on mocked artifacts | Test real behavior or remove mock |
-| Test-only methods in production | Move to fixtures/test helpers |
-| Mock without understanding | Understand dependencies, mock minimally |
-| Incomplete mocks | Match real schema fully |
-| Tests as afterthought | TDD: RED -> GREEN -> REFACTOR |
-| Over-complex mocks | Prefer integration tests where practical |
+| Assert on mock elements | Test real component or unmock it |
+| Test-only methods in production | Move to test utilities |
+| Mock without understanding | Understand dependencies first, mock minimally |
+| Incomplete mocks | Mirror real API completely |
+| Tests as afterthought | TDD - tests first |
+| Over-complex mocks | Consider integration tests |
 
 ## Red Flags
 
-- Assertion checks only mocked artifacts
-- Methods used only by tests appear in production code
+- Assertion checks for `*-mock` test IDs
+- Methods only called in test files
 - Mock setup is >50% of test
+- Test fails when you remove mock
 - Can't explain why mock is needed
 - Mocking "just to be safe"
 
 ## The Bottom Line
 
-**Mocks are tools to isolate, not the thing to validate.**
+**Mocks are tools to isolate, not things to test.**
 
 If TDD reveals you're testing mock behavior, you've gone wrong.
 
-Fix: test real behavior or remove unnecessary mocking.
+Fix: Test real behavior or question why you're mocking at all.
