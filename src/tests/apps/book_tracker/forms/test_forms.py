@@ -112,3 +112,25 @@ class TestPracticeLogForm:
 
         assert not form.is_valid()
         assert form.errors["page_number"] == [f"Page number must be between 1 and {book.page_count}."]
+
+    def test_accepts_page_number_within_book_page_count(self) -> None:
+        book = BookFactory(title="Stick Control", page_count=20)
+        section = SectionFactory(book=book, title="Chapter 1", order=1)
+        exercise = ExerciseFactory(section=section, identifier="1", page_number=12)
+
+        form = PracticeLogForm(
+            data={
+                "book": str(book.pk),
+                "section": str(section.pk),
+                "page_number": "12",
+                "exercise": str(exercise.pk),
+                "practiced_on": datetime.date(2026, 4, 23).isoformat(),
+                "tempo": "120",
+                "difficulty": str(PracticeLog.Difficulty.EASY),
+                "relaxation_level": str(PracticeLog.RelaxationLevel.RELAXED),
+                "notes": "",
+            },
+        )
+
+        assert form.is_valid()
+        assert form.cleaned_data["page_number"] == 12

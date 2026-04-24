@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -22,6 +22,35 @@ if TYPE_CHECKING:
     from django.http import HttpResponse, QueryDict
 
     from core.htmx import HtmxHttpRequest
+
+
+class PageRange(NamedTuple):
+    start: int
+    end: int
+    page: int
+
+
+class PageRangeFormRow(NamedTuple):
+    range_start: str
+    range_end: str
+    range_page: str
+
+
+class PageRangeRowParseResult(NamedTuple):
+    page_range: PageRange | None
+    error: str | None
+
+
+class PageRangeParseSuccess(TypedDict):
+    page_lookup: PageLookup
+
+
+class PageLookup(TypedDict):
+    exercise_to_page: dict[int, int]
+
+
+class PageRangeParseFailure(TypedDict):
+    errors: list[str]
 
 
 # --- Author views ---
@@ -364,7 +393,70 @@ def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return redirect("exercise-detail", pk=pk)
 
 
-def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> dict[int, int] | list[str]:
+def _parse_page_range_row(
+    *,
+    row_index: int,
+    raw_start: str,
+    raw_end: str,
+    raw_page: str,
+    exercise_start: int,
+    exercise_end: int,
+) -> PageRangeRowParseResult:
+    if not raw_start or not raw_end or not raw_page:
+        return PageRangeRowParseResult(page_range=None, error=f"Page range {row_index}: all fields are required.")
+
+    try:
+        start_int, end_int, page_int = int(raw_start), int(raw_end), int(raw_page)
+    except ValueError:
+        return PageRangeRowParseResult(page_range=None, error=f"Page range {row_index}: values must be integers.")
+
+    if start_int > end_int:
+        return PageRangeRowParseResult(
+            page_range=None,
+            error=f"Page range {row_index}: 'from' ({start_int}) must be ≤ 'to' ({end_int}).",
+        )
+    if start_int < exercise_start or end_int > exercise_end:
+        return PageRangeRowParseResult(
+            page_range=None,
+            error=f"Page range {row_index}: range {start_int}-{end_int} is outside exercises {exercise_start}-{exercise_end}.",
+        )
+    if page_int < 1:
+        return PageRangeRowParseResult(
+            page_range=None,
+            error=f"Page range {row_index}: page number must be positive.",
+        )
+
+    return PageRangeRowParseResult(page_range=PageRange(start=start_int, end=end_int, page=page_int), error=None)
+
+
+def _find_page_range_overlaps(parsed_ranges: list[PageRange]) -> list[str]:
+    if len(parsed_ranges) < 2:
+        return []
+
+    overlaps: list[str] = []
+    for i in range(len(parsed_ranges) - 1):
+        current = parsed_ranges[i]
+        nxt = parsed_ranges[i + 1]
+        current_start, current_end = current.start, current.end
+        next_start, next_end = nxt.start, nxt.end
+        if current_end >= next_start:
+            overlaps.append(f"Page ranges overlap: {current_start}-{current_end} and {next_start}-{next_end}.")
+    return overlaps
+
+
+def _build_page_lookup(parsed_ranges: list[PageRange]) -> tuple[set[int], dict[int, int]]:
+    covered: set[int] = set()
+    page_lookup: dict[int, int] = {}
+
+    for page_range in parsed_ranges:
+        for exercise_number in range(page_range.start, page_range.end + 1):
+            covered.add(exercise_number)
+            page_lookup[exercise_number] = page_range.page
+
+    return covered, page_lookup
+
+
+def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> PageRangeParseSuccess | PageRangeParseFailure:
     """Parse and validate page range rows from POST data.
 
     Returns a dict mapping exercise number → page number on success,
@@ -375,57 +467,44 @@ def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> dict[int, 
     range_page = post_data.getlist("range_page")
 
     if not range_start:
-        return ["At least one page range is required."]
+        return {"errors": ["At least one page range is required."]}
 
     errors: list[str] = []
-    parsed: list[tuple[int, int, int]] = []
+    parsed_ranges: list[PageRange] = []
 
     for i, (rs, re_, rp) in enumerate(zip(range_start, range_end, range_page, strict=False), 1):
-        if not rs or not re_ or not rp:
-            errors.append(f"Page range {i}: all fields are required.")
+        parsed_row = _parse_page_range_row(
+            row_index=i,
+            raw_start=rs,
+            raw_end=re_,
+            raw_page=rp,
+            exercise_start=start,
+            exercise_end=end,
+        )
+        if parsed_row.error:
+            errors.append(parsed_row.error)
             continue
-        try:
-            rs_int, re_int, rp_int = int(rs), int(re_), int(rp)
-        except ValueError:
-            errors.append(f"Page range {i}: values must be integers.")
-            continue
-        if rs_int > re_int:
-            errors.append(f"Page range {i}: 'from' ({rs_int}) must be ≤ 'to' ({re_int}).")
-        elif rs_int < start or re_int > end:
-            errors.append(f"Page range {i}: range {rs_int}-{re_int} is outside exercises {start}-{end}.")
-        elif rp_int < 1:
-            errors.append(f"Page range {i}: page number must be positive.")
-        else:
-            parsed.append((rs_int, re_int, rp_int))
+        if parsed_row.page_range is not None:
+            parsed_ranges.append(parsed_row.page_range)
 
     if errors:
-        return errors
+        return {"errors": errors}
 
-    # Check for overlaps
-    parsed.sort()
-    errors.extend(
-        f"Page ranges overlap: {parsed[i][0]}-{parsed[i][1]} and {parsed[i + 1][0]}-{parsed[i + 1][1]}." for i in range(len(parsed) - 1) if parsed[i][1] >= parsed[i + 1][0]
-    )
+    parsed_ranges.sort()
+    overlap_errors = _find_page_range_overlaps(parsed_ranges)
+    if overlap_errors:
+        return {"errors": overlap_errors}
 
-    if errors:
-        return errors
-
-    # Check full coverage
-    covered: set[int] = set()
-    page_lookup: dict[int, int] = {}
-    for rs_int, re_int, rp_int in parsed:
-        for n in range(rs_int, re_int + 1):
-            covered.add(n)
-            page_lookup[n] = rp_int
+    covered, page_lookup = _build_page_lookup(parsed_ranges)
 
     expected = set(range(start, end + 1))
     missing = expected - covered
     if missing:
         sorted_missing = sorted(missing)
         errors.append(f"Page ranges do not cover exercises: {', '.join(str(m) for m in sorted_missing)}.")
-        return errors
+        return {"errors": errors}
 
-    return page_lookup
+    return {"page_lookup": {"exercise_to_page": page_lookup}}
 
 
 def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
@@ -440,10 +519,10 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
             tags = form.cleaned_data["tags"]
 
             result = _parse_page_ranges(request.POST, start, end)
-            if isinstance(result, list):
-                page_range_errors = result
+            if "errors" in result:
+                page_range_errors = result["errors"]
             else:
-                page_lookup = result
+                page_lookup = result["page_lookup"]["exercise_to_page"]
 
                 for n in range(start, end + 1):
                     Exercise.objects.create(
@@ -458,9 +537,9 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
         range_starts = request.POST.getlist("range_start")
         range_ends = request.POST.getlist("range_end")
         range_pages = request.POST.getlist("range_page")
-        page_ranges = list(zip(range_starts, range_ends, range_pages, strict=False))
+        page_ranges = [PageRangeFormRow(range_start=rs, range_end=re_, range_page=rp) for rs, re_, rp in zip(range_starts, range_ends, range_pages, strict=False)]
         if not page_ranges:
-            page_ranges = [("", "", "")]
+            page_ranges = [PageRangeFormRow(range_start="", range_end="", range_page="")]
 
         return render(
             request,
@@ -472,7 +551,7 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
     return render(
         request,
         "book_tracker/exercises/bulk_create.html",
-        {"form": form, "page_ranges": [("", "", "")]},
+        {"form": form, "page_ranges": [PageRangeFormRow(range_start="", range_end="", range_page="")]},
     )
 
 

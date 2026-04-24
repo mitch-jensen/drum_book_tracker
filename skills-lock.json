@@ -31,6 +31,11 @@
       "sourceType": "github",
       "computedHash": "43988198c10c8be82136aed14a7ea117c6136bcb2992f3eb4318adeb680e6bfa"
     },
+    "pytest-django-patterns": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "efb3232a6de1e79ddf0f2fdaf71659016df08dbff722e08d9343d4d9b2c1f556"
+    },
     "test-driven-development": {
       "source": "obra/superpowers",
       "sourceType": "github",

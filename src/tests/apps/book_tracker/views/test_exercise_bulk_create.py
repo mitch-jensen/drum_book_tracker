@@ -122,6 +122,26 @@ class TestExerciseBulkCreatePost:
         assert b"Start must be less than or equal to end" in response.content
         assert Exercise.objects.count() == 0
 
+    def test_page_range_from_greater_than_to_shows_error(self, client: Client) -> None:
+        section = SectionFactory()
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": 1,
+                "end": 5,
+                "range_start": ["4"],
+                "range_end": ["2"],
+                "range_page": ["10"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert b"must be" in response.content
+        assert b"to" in response.content
+        assert Exercise.objects.count() == 0
+
     def test_conflicting_identifiers_shows_error(self, client: Client) -> None:
         section = SectionFactory()
         ExerciseFactory(section=section, identifier="3")
