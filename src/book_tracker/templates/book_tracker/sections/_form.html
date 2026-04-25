@@ -1,0 +1,13 @@
+{% load crispy_forms_tags %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Add Section</h5>
+        <form hx-post="{% url 'section-create' %}"
+              hx-target="#section-form-container"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% crispy form %}
+            <button type="submit" class="btn btn-primary mt-2">Add Section</button>
+        </form>
+    </div>
+</div>

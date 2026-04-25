@@ -1,0 +1,80 @@
+{% load form_tags %}
+<tr id="log-{{ log.id }}">
+    <td>
+        <select name="book"
+                class="form-select form-select-sm"
+                hx-get="{% url 'section-options' %}?exercise_target=edit-exercise-{{ log.id }}"
+                hx-target="#edit-section-{{ log.id }}"
+                hx-include="[name=book]"
+                hx-trigger="change">
+            <option value="">---------</option>
+            {% for book in books %}
+                <option value="{{ book.pk }}"
+                        {% if book.pk == current_book_id %}selected{% endif %}>{{ book.title }}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td>
+        <select name="section"
+                id="edit-section-{{ log.id }}"
+                class="form-select form-select-sm"
+                hx-get="{% url 'exercise-options' %}"
+                hx-target="#edit-exercise-{{ log.id }}"
+                hx-include="[name=book],[name=section],[name=page_number]"
+                hx-trigger="change">
+            <option value="">---------</option>
+            {% for section in sections %}
+                <option value="{{ section.pk }}"
+                        {% if section.pk == current_section_id %}selected{% endif %}>{{ section }}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td>
+        <input type="number"
+               name="page_number"
+               value=""
+               min="1"
+               class="form-control form-control-sm"
+               hx-get="{% url 'exercise-options' %}"
+               hx-target="#edit-exercise-{{ log.id }}"
+               hx-include="[name=book],[name=section],[name=page_number]"
+               hx-trigger="change"
+               placeholder="Page #">
+    </td>
+    <td>
+        {{ form.exercise|widget_sm }}
+        {% for error in form.exercise.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.practiced_on|widget_sm }}
+        {% for error in form.practiced_on.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.tempo|widget_sm }}
+        {% for error in form.tempo.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.difficulty|widget_sm }}
+        {% for error in form.difficulty.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.relaxation_level|widget_sm }}
+        {% for error in form.relaxation_level.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.notes|widget_sm }}
+        {% for error in form.notes.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-success"
+                hx-post="{% url 'log-update' log.id %}"
+                hx-target="#log-{{ log.id }}"
+                hx-swap="outerHTML"
+                hx-include="closest tr"
+                hx-disabled-elt="this">Save</button>
+        <button class="btn btn-sm btn-outline-secondary"
+                hx-get="{% url 'log-row' log.id %}"
+                hx-target="#log-{{ log.id }}"
+                hx-swap="outerHTML">Cancel</button>
+    </td>
+</tr>

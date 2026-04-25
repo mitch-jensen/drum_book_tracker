@@ -1,0 +1,19 @@
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for author in authors %}
+            {% include "book_tracker/authors/_row.html" with author=author only %}
+        {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">No authors yet.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div id="author-form-container">{% include "book_tracker/authors/_form.html" %}</div>

@@ -1,0 +1,13 @@
+{% load crispy_forms_tags %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Add Log Entry</h5>
+        <form hx-post="{% url 'log-create' %}"
+              hx-target="#log-form-container"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% crispy form %}
+            <button type="submit" class="btn btn-primary mt-2">Add Log Entry</button>
+        </form>
+    </div>
+</div>

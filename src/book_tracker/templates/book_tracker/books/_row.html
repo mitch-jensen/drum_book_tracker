@@ -1,0 +1,11 @@
+<tr id="book-{{ book.id }}">
+    <td>{{ book.title }}</td>
+    <td>{{ book.page_count }}</td>
+    <td>{{ book.authors.all|join:", " }}</td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'book-edit' book.id %}"
+                hx-target="#book-{{ book.id }}"
+                hx-swap="outerHTML">Edit</button>
+    </td>
+</tr>

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}
+    {{ exercise }} | {{ block.super }}
+{% endblock title %}
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'exercise-list' %}">Exercises</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ exercise }}</li>
+        </ol>
+    </nav>
+    <h1 class="mb-4">{{ exercise }}</h1>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Exercise Info</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Book</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.section.book.title }}
+                        </dd>
+                        <dt class="col-sm-4">Section</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.section.title }}
+                        </dd>
+                        <dt class="col-sm-4">Identifier</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.identifier|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.description|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Page</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.page_number|default:"—" }}
+                        </dd>
+                        <dt class="col-sm-4">Tags</dt>
+                        <dd class="col-sm-8">
+                            {{ exercise.tags.all|join:", "|default:"—" }}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Practice Summary</div>
+                <div class="card-body">
+                    {% if stats.practice_count %}
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Times Practiced</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.practice_count }}
+                            </dd>
+                            <dt class="col-sm-6">First Practiced</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.first_practiced }}
+                            </dd>
+                            <dt class="col-sm-6">Most Recent</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.most_recent_practice }}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p class="text-muted mb-0">No practice logs yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">Notation</div>
+                <div class="card-body">
+                    {% if exercise.notation_image %}
+                        <div class="mb-3">
+                            <img src="{{ exercise.notation_image.url }}"
+                                 alt="Notation for {{ exercise }}"
+                                 class="img-fluid border rounded"
+                                 width="800"
+                                 height="600">
+                        </div>
+                    {% endif %}
+                    <form method="post"
+                          action="{% url 'exercise-upload-notation' exercise.id %}"
+                          enctype="multipart/form-data"
+                          class="mt-3">
+                        {% csrf_token %}
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label for="id_notation_image" class="form-label">
+                                    {% if exercise.notation_image %}
+                                        Replace
+                                    {% else %}
+                                        Upload
+                                    {% endif %}
+                                    Notation Image
+                                </label>
+                                <input type="file"
+                                       name="notation_image"
+                                       id="id_notation_image"
+                                       class="form-control"
+                                       accept="image/*">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">Upload</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if stats.practice_count %}
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Tempo</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Min</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.min_tempo }} BPM
+                            </dd>
+                            <dt class="col-sm-6">Avg</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.avg_tempo|floatformat:1 }} BPM
+                            </dd>
+                            <dt class="col-sm-6">Max</dt>
+                            <dd class="col-sm-6">
+                                {{ stats.max_tempo }} BPM
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Difficulty</div>
+                    <div class="card-body">
+                        <p class="display-6 mb-0">
+                            {% if stats.avg_difficulty %}
+                                {{ stats.avg_difficulty|floatformat:1 }}/5
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Relaxation</div>
+                    <div class="card-body">
+                        <p class="display-6 mb-0">
+                            {% if stats.avg_relaxation %}
+                                {{ stats.avg_relaxation|floatformat:1 }}/5
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">Most Recent Log</div>
+                <div class="card-body">
+                    {% if last_log %}
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Date</dt>
+                            <dd class="col-sm-8">
+                                {{ last_log.practiced_on }}
+                            </dd>
+                            <dt class="col-sm-4">Tempo</dt>
+                            <dd class="col-sm-8">
+                                {{ last_log.tempo }} BPM
+                            </dd>
+                            <dt class="col-sm-4">Difficulty</dt>
+                            <dd class="col-sm-8">
+                                {{ last_log.get_difficulty_display }}
+                            </dd>
+                            <dt class="col-sm-4">Relaxation</dt>
+                            <dd class="col-sm-8">
+                                {{ last_log.get_relaxation_level_display }}
+                            </dd>
+                            <dt class="col-sm-4">Notes</dt>
+                            <dd class="col-sm-8">
+                                {{ last_log.notes|default:"—" }}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p class="text-muted mb-0">No practice logs yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">Recent Logs</div>
+                <div class="card-body">
+                    {% if recent_logs %}
+                        <ul class="list-group list-group-flush">
+                            {% for log in recent_logs %}
+                                <li class="list-group-item px-0">
+                                    <strong>{{ log.practiced_on }}</strong>
+                                    <span class="text-muted">at {{ log.tempo }} BPM</span>
+                                    {% if log.notes %}<div>{{ log.notes }}</div>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">No recent logs yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

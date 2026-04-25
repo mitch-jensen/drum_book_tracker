@@ -1,0 +1,27 @@
+{% load form_tags %}
+<tr id="section-{{ section.id }}">
+    <td>
+        {{ form.book|widget_sm }}
+        {% for error in form.book.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.title|widget_sm }}
+        {% for error in form.title.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+        {{ form.order|widget_sm }}
+        {% for error in form.order.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-success"
+                hx-post="{% url 'section-update' section.id %}"
+                hx-target="#section-{{ section.id }}"
+                hx-swap="outerHTML"
+                hx-include="closest tr"
+                hx-disabled-elt="this">Save</button>
+        <button class="btn btn-sm btn-outline-secondary"
+                hx-get="{% url 'section-row' section.id %}"
+                hx-target="#section-{{ section.id }}"
+                hx-swap="outerHTML">Cancel</button>
+    </td>
+</tr>

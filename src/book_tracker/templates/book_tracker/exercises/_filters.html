@@ -1,0 +1,16 @@
+<form method="get" class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6 col-lg-4">
+                <label for="{{ filter_form.tags.id_for_label }}" class="form-label mb-1">Filter By Tags</label>
+                {{ filter_form.tags }}
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-outline-primary">Apply Filter</button>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'exercise-list' %}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </div>
+    </div>
+</form>

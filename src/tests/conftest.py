@@ -10,29 +10,29 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def author() -> Author:
-    return AuthorFactory(first_name="George", last_name="Stone")
+    return AuthorFactory.create(first_name="George", last_name="Stone")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def book(author: Author) -> Book:
-    return BookFactory(title="Stick Control", page_count=190, authors=[author])
+    return BookFactory.create(title="Stick Control", page_count=190, authors=[author])  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def section(book: Book) -> Section:
-    return SectionFactory(book=book, title="Chapter 1", order=1)
+    return SectionFactory.create(book=book, title="Chapter 1", order=1)  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def exercise(section: Section) -> Exercise:
-    return ExerciseFactory(section=section, identifier="1")
+    return ExerciseFactory.create(section=section, identifier="1")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def tag() -> Tag:
-    return TagFactory(name="Paradiddles")
+    return TagFactory.create(name="Paradiddles")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def practice_log(exercise: Exercise) -> PracticeLog:
-    return PracticeLogFactory(exercise=exercise, tempo=120)
+    return PracticeLogFactory.create(exercise=exercise, tempo=120)  # pyrefly: ignore[bad-return]

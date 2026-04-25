@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}
+    Log Entries | {{ block.super }}
+{% endblock title %}
+{% block content %}
+    <h1 class="mb-4">Log Entries</h1>
+    <div id="log-list-container">{% include "book_tracker/logs/_list.html" %}</div>
+{% endblock content %}

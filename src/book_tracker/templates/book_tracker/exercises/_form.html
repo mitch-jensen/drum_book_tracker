@@ -1,0 +1,17 @@
+{% load crispy_forms_tags %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Add Exercise</h5>
+        <p>
+            <a href="{% url 'exercise-bulk-create' %}"
+               class="btn btn-outline-secondary btn-sm">Bulk Create</a>
+        </p>
+        <form hx-post="{% url 'exercise-create' %}"
+              hx-target="#exercise-form-container"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% crispy form %}
+            <button type="submit" class="btn btn-primary mt-2">Add Exercise</button>
+        </form>
+    </div>
+</div>
