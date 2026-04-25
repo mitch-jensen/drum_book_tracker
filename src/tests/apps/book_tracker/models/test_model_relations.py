@@ -1,9 +1,8 @@
 import datetime  # noqa: INP001
-from typing import cast
 
 import pytest
 
-from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
+from book_tracker.models import Book, Exercise, PracticeLog, Section
 from tests.factories import AuthorFactory, BookFactory, ExerciseFactory, PracticeLogFactory, SectionFactory, TagFactory
 
 pytestmark = pytest.mark.django_db
@@ -11,7 +10,7 @@ pytestmark = pytest.mark.django_db
 
 def test_book_with_multiple_authors() -> None:
     authors = AuthorFactory.create_batch(3)
-    book = cast("Book", BookFactory(authors=authors))
+    book = BookFactory(authors=authors)
 
     assert book.authors.count() == 3
     for author in authors:
@@ -19,7 +18,7 @@ def test_book_with_multiple_authors() -> None:
 
 
 def test_author_with_multiple_books() -> None:
-    author = cast("Author", AuthorFactory())
+    author = AuthorFactory()
     books = BookFactory.create_batch(3, authors=[author])
 
     assert author.books.count() == 3
@@ -29,10 +28,10 @@ def test_author_with_multiple_books() -> None:
 
 def test_book_repr_includes_all_authors() -> None:
     authors = [
-        cast("Author", AuthorFactory(first_name="George", last_name="Stone")),
-        cast("Author", AuthorFactory(first_name="Ted", last_name="Reed")),
+        AuthorFactory(first_name="George", last_name="Stone"),
+        AuthorFactory(first_name="Ted", last_name="Reed"),
     ]
-    book = cast("Book", BookFactory(title="Duet Book", authors=authors))
+    book = BookFactory(title="Duet Book", authors=authors)
 
     book_repr = repr(book)
     assert "George Stone" in book_repr
@@ -40,16 +39,16 @@ def test_book_repr_includes_all_authors() -> None:
 
 
 def test_book_with_multiple_sections() -> None:
-    book = cast("Book", BookFactory())
-    sections = [cast("Section", SectionFactory(book=book, order=i)) for i in range(1, 5)]
+    book = BookFactory()
+    sections = [SectionFactory(book=book, order=i) for i in range(1, 5)]
 
     assert book.sections.count() == 4
     assert list(book.sections.order_by("order")) == sections
 
 
 def test_section_with_multiple_exercises() -> None:
-    section = cast("Section", SectionFactory())
-    exercises = [cast("Exercise", ExerciseFactory(section=section, identifier=str(i))) for i in range(1, 6)]
+    section = SectionFactory()
+    exercises = [ExerciseFactory(section=section, identifier=str(i)) for i in range(1, 6)]
 
     assert section.exercises.count() == 5
     assert list(section.exercises.order_by("identifier")) == exercises
@@ -57,7 +56,7 @@ def test_section_with_multiple_exercises() -> None:
 
 def test_exercise_with_multiple_tags() -> None:
     tags = TagFactory.create_batch(3)
-    exercise = cast("Exercise", ExerciseFactory(tags=tags))
+    exercise = ExerciseFactory(tags=tags)
 
     assert exercise.tags.count() == 3
     for tag in tags:
@@ -65,8 +64,8 @@ def test_exercise_with_multiple_tags() -> None:
 
 
 def test_tag_shared_across_exercises() -> None:
-    tag = cast("Tag", TagFactory(name="Paradiddles"))
-    exercises = [cast("Exercise", ExerciseFactory(tags=[tag])) for _ in range(4)]
+    tag = TagFactory(name="Paradiddles")
+    exercises = [ExerciseFactory(tags=[tag]) for _ in range(4)]
 
     assert tag.exercises.count() == 4
     for exercise in exercises:
@@ -75,7 +74,7 @@ def test_tag_shared_across_exercises() -> None:
 
 def test_practice_logs_across_full_object_graph() -> None:
     """Multiple practice logs across exercises in different sections of different books."""
-    author = cast("Author", AuthorFactory())
+    author = AuthorFactory()
     books = BookFactory.create_batch(2, authors=[author])
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
@@ -83,11 +82,11 @@ def test_practice_logs_across_full_object_graph() -> None:
     all_logs: list[PracticeLog] = []
     for book in books:
         for section_order in range(1, 3):
-            section = cast("Section", SectionFactory(book=book, order=section_order))
+            section = SectionFactory(book=book, order=section_order)
             for exercise_num in range(1, 3):
-                exercise = cast("Exercise", ExerciseFactory(section=section, identifier=str(exercise_num)))
-                all_logs.append(cast("PracticeLog", PracticeLogFactory(exercise=exercise, practiced_on=yesterday, tempo=80)))
-                all_logs.append(cast("PracticeLog", PracticeLogFactory(exercise=exercise, practiced_on=today, tempo=100)))
+                exercise = ExerciseFactory(section=section, identifier=str(exercise_num))
+                all_logs.append(PracticeLogFactory(exercise=exercise, practiced_on=yesterday, tempo=80))  # pyrefly: ignore[bad-argument-type]
+                all_logs.append(PracticeLogFactory(exercise=exercise, practiced_on=today, tempo=100))  # pyrefly: ignore[bad-argument-type]
 
     assert PracticeLog.objects.count() == 16  # 2 books * 2 sections * 2 exercises * 2 logs
     assert Exercise.objects.count() == 8
@@ -100,7 +99,7 @@ def test_practice_logs_across_full_object_graph() -> None:
 
 
 def test_practice_logs_filter_by_date_range() -> None:
-    exercise = cast("Exercise", ExerciseFactory())
+    exercise = ExerciseFactory()
     today = datetime.date.today()
 
     dates = [today - datetime.timedelta(days=i) for i in range(7)]
@@ -112,14 +111,11 @@ def test_practice_logs_filter_by_date_range() -> None:
 
 
 def test_practice_log_with_all_fields_set() -> None:
-    log = cast(
-        "PracticeLog",
-        PracticeLogFactory(
-            tempo=140,
-            notes="Felt good at this tempo",
-            difficulty=PracticeLog.Difficulty.MEDIUM,
-            relaxation_level=PracticeLog.RelaxationLevel.RELAXED,
-        ),
+    log = PracticeLogFactory(
+        tempo=140,
+        notes="Felt good at this tempo",
+        difficulty=PracticeLog.Difficulty.MEDIUM,
+        relaxation_level=PracticeLog.RelaxationLevel.RELAXED,
     )
 
     log.refresh_from_db()
@@ -130,15 +126,15 @@ def test_practice_log_with_all_fields_set() -> None:
 
 
 def test_exercise_with_page_number() -> None:
-    exercise = cast("Exercise", ExerciseFactory(page_number=42))
+    exercise = ExerciseFactory(page_number=42)
 
     exercise.refresh_from_db()
     assert exercise.page_number == 42
 
 
 def test_deleting_section_cascades_to_exercises_and_logs() -> None:
-    section = cast("Section", SectionFactory())
-    exercises = [cast("Exercise", ExerciseFactory(section=section, identifier=str(i))) for i in range(1, 4)]
+    section = SectionFactory()
+    exercises = [ExerciseFactory(section=section, identifier=str(i)) for i in range(1, 4)]
     for ex in exercises:
         PracticeLogFactory.create_batch(2, exercise=ex)
 
@@ -152,7 +148,7 @@ def test_deleting_section_cascades_to_exercises_and_logs() -> None:
 
 
 def test_deleting_exercise_cascades_to_practice_logs() -> None:
-    exercise = cast("Exercise", ExerciseFactory())
+    exercise = ExerciseFactory()
     PracticeLogFactory.create_batch(5, exercise=exercise)
 
     assert PracticeLog.objects.count() == 5

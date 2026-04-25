@@ -1,6 +1,4 @@
-from typing import cast  # noqa: INP001
-
-import pytest
+import pytest  # noqa: INP001
 from django.db import IntegrityError
 
 from book_tracker.models import Book, Exercise, PracticeLog, Section
@@ -17,10 +15,10 @@ def test_section_order_must_be_unique_per_book(book: Book) -> None:
 
 
 def test_section_order_can_repeat_across_books(book: Book) -> None:
-    other_book = cast("Book", BookFactory())
+    other_book = BookFactory()
 
     SectionFactory(book=book, order=1)
-    repeated_order_section = cast("Section", SectionFactory(book=other_book, order=1))
+    repeated_order_section = SectionFactory(book=other_book, order=1)
 
     assert repeated_order_section.book_id == other_book.id
 
@@ -33,11 +31,11 @@ def test_exercise_identifier_must_be_unique_per_section(section: Section) -> Non
 
 
 def test_exercise_identifier_can_repeat_across_sections(book: Book) -> None:
-    section_1 = cast("Section", SectionFactory(book=book, order=1))
-    section_2 = cast("Section", SectionFactory(book=book, order=2))
+    section_1 = SectionFactory(book=book, order=1)
+    section_2 = SectionFactory(book=book, order=2)
 
     ExerciseFactory(section=section_1, identifier="1")
-    repeated_identifier_exercise = cast("Exercise", ExerciseFactory(section=section_2, identifier="1"))
+    repeated_identifier_exercise = ExerciseFactory(section=section_2, identifier="1")
 
     assert repeated_identifier_exercise.section_id == section_2.id
 

@@ -13,13 +13,12 @@ os.environ.setdefault("DATABASE_USER", "unused-local-test-user")
 os.environ.setdefault("DATABASE_PASSWORD", "unused-local-test-password")
 os.environ.setdefault("DATABASE_HOST", "unused-local-test-host")
 
-from core.settings import (
-    BASE_DIR,
-)
+
+from core.settings import *  # noqa: F403
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db_test.sqlite3",
+        "NAME": BASE_DIR / "db_test.sqlite3",  # noqa: F405
     },
 }

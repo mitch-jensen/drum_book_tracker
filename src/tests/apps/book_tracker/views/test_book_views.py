@@ -1,5 +1,5 @@
 from http import HTTPStatus  # noqa: INP001
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 from django.urls import reverse
@@ -50,7 +50,7 @@ class TestBookList:
 
 class TestBookCreate:
     def test_creates_book(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory())
+        author: Author = AuthorFactory()
 
         response = client.post(
             reverse("book-create"),
@@ -62,7 +62,7 @@ class TestBookCreate:
         assert Book.objects.filter(title="Stick Control").exists()
 
     def test_success_retargets_to_full_list(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory())
+        author: Author = AuthorFactory()
 
         response = client.post(
             reverse("book-create"),
@@ -74,7 +74,7 @@ class TestBookCreate:
         assert response["HX-Reswap"] == "innerHTML"
 
     def test_success_renders_new_book_in_list(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory(first_name="George", last_name="Stone"))
+        author: Author = AuthorFactory(first_name="George", last_name="Stone")
 
         response = client.post(
             reverse("book-create"),
@@ -86,7 +86,7 @@ class TestBookCreate:
         assert b"George Stone" in response.content
 
     def test_validation_error_missing_title(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory())
+        author: Author = AuthorFactory()
 
         response = client.post(
             reverse("book-create"),
@@ -99,7 +99,7 @@ class TestBookCreate:
         assert b"This field is required." in response.content
 
     def test_validation_error_missing_page_count(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory())
+        author: Author = AuthorFactory()
 
         response = client.post(
             reverse("book-create"),
@@ -121,7 +121,7 @@ class TestBookCreate:
         assert not Book.objects.exists()
 
     def test_rejects_non_htmx_request(self, client: Client) -> None:
-        author = cast("Author", AuthorFactory())
+        author: Author = AuthorFactory()
 
         response = client.post(
             reverse("book-create"),

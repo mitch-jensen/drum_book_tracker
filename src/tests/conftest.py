@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -10,29 +10,29 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def author() -> Author:
-    return cast("Author", AuthorFactory(first_name="George", last_name="Stone"))
+    return AuthorFactory(first_name="George", last_name="Stone")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def book(author: Author) -> Book:
-    return cast("Book", BookFactory(title="Stick Control", page_count=190, authors=[author]))
+    return BookFactory(title="Stick Control", page_count=190, authors=[author])  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def section(book: Book) -> Section:
-    return cast("Section", SectionFactory(book=book, title="Chapter 1", order=1))
+    return SectionFactory(book=book, title="Chapter 1", order=1)  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def exercise(section: Section) -> Exercise:
-    return cast("Exercise", ExerciseFactory(section=section, identifier="1"))
+    return ExerciseFactory(section=section, identifier="1")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def tag() -> Tag:
-    return cast("Tag", TagFactory(name="Paradiddles"))
+    return TagFactory(name="Paradiddles")  # pyrefly: ignore[bad-return]
 
 
 @pytest.fixture
 def practice_log(exercise: Exercise) -> PracticeLog:
-    return cast("PracticeLog", PracticeLogFactory(exercise=exercise, tempo=120))
+    return PracticeLogFactory(exercise=exercise, tempo=120)  # pyrefly: ignore[bad-return]

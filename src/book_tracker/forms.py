@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
@@ -6,6 +6,20 @@ from django import forms
 from django.urls import reverse_lazy
 
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
+
+
+def _require_base_form(instance: object) -> forms.BaseForm:
+    if not isinstance(instance, forms.BaseForm):
+        msg = "Expected a Django BaseForm instance."
+        raise TypeError(msg)
+    return instance
+
+
+def _require_model_choice_field(field: forms.Field) -> forms.ModelChoiceField:
+    if not isinstance(field, forms.ModelChoiceField):
+        msg = "Expected a ModelChoiceField."
+        raise TypeError(msg)
+    return field
 
 
 class CrispyNoTagMixin:
@@ -21,9 +35,10 @@ class CrispyNoTagMixin:
 class BootstrapFieldClassMixin:
     """Apply Bootstrap-compatible widget classes to all fields unless pre-set."""
 
-    def apply_bootstrap_field_classes(self: forms.BaseForm) -> None:
+    def apply_bootstrap_field_classes(self: object) -> None:
         """Apply 'form-select' to select widgets and 'form-control' to others, unless already set."""
-        for field in self.fields.values():
+        form = _require_base_form(self)
+        for field in form.fields.values():
             if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
                 field.widget.attrs.setdefault("class", "form-select")
             else:
@@ -219,7 +234,7 @@ class PracticeLogForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelFor
                 self.fields["page_number"].initial = self.instance.exercise.page_number
 
         if book_id:
-            section_field = cast("forms.ModelChoiceField", self.fields["section"])
+            section_field = _require_model_choice_field(self.fields["section"])
             section_field.queryset = Section.objects.filter(book_id=book_id).order_by("order")
             qs = (
                 Exercise.objects.filter(
@@ -233,10 +248,10 @@ class PracticeLogForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelFor
             page_num = self.data.get("page_number") if self.data else None
             if page_num:
                 qs = qs.filter(page_number=page_num)
-            exercise_field = cast("forms.ModelChoiceField", self.fields["exercise"])
+            exercise_field = _require_model_choice_field(self.fields["exercise"])
             exercise_field.queryset = qs
         else:
-            exercise_field = cast("forms.ModelChoiceField", self.fields["exercise"])
+            exercise_field = _require_model_choice_field(self.fields["exercise"])
             exercise_field.queryset = Exercise.objects.none()
 
         self.apply_bootstrap_field_classes()

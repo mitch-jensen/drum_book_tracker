@@ -7,7 +7,7 @@ from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Ta
 
 
 class AuthorFactory(DjangoModelFactory[Author]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = Author
 
     first_name = factory.Faker("first_name")
@@ -15,7 +15,7 @@ class AuthorFactory(DjangoModelFactory[Author]):
 
 
 class BookFactory(DjangoModelFactory[Book]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = Book
         skip_postgeneration_save = True
 
@@ -27,11 +27,11 @@ class BookFactory(DjangoModelFactory[Book]):
         if not create:
             return
         if extracted:
-            self.authors.add(*extracted)
+            self.authors.add(*extracted)  # pyrefly: ignore[missing-attribute]
 
 
 class SectionFactory(DjangoModelFactory[Section]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = Section
 
     book = factory.SubFactory(BookFactory)
@@ -40,14 +40,14 @@ class SectionFactory(DjangoModelFactory[Section]):
 
 
 class TagFactory(DjangoModelFactory[Tag]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = Tag
 
     name = factory.Faker("word")
 
 
 class ExerciseFactory(DjangoModelFactory[Exercise]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = Exercise
         skip_postgeneration_save = True
 
@@ -59,11 +59,11 @@ class ExerciseFactory(DjangoModelFactory[Exercise]):
         if not create:
             return
         if extracted:
-            self.tags.add(*extracted)
+            self.tags.add(*extracted)  # pyrefly: ignore[missing-attribute]
 
 
 class PracticeLogFactory(DjangoModelFactory[PracticeLog]):
-    class Meta(DjangoModelFactory.Meta):
+    class Meta:  # pyrefly: ignore[bad-override]
         model = PracticeLog
 
     exercise = factory.SubFactory(ExerciseFactory)

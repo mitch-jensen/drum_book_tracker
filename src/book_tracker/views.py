@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, NamedTuple, TypedDict, cast
+from typing import TYPE_CHECKING, NamedTuple, TypedDict, TypeGuard
 
 from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -51,6 +51,17 @@ class PageLookup(TypedDict):
 
 class PageRangeParseFailure(TypedDict):
     errors: list[str]
+
+
+PageRangeParseResultDict = PageRangeParseSuccess | PageRangeParseFailure
+
+
+def _is_page_range_parse_failure(result: PageRangeParseResultDict) -> TypeGuard[PageRangeParseFailure]:
+    return "errors" in result
+
+
+def _is_page_range_parse_success(result: PageRangeParseResultDict) -> TypeGuard[PageRangeParseSuccess]:
+    return "page_lookup" in result
 
 
 # --- Author views ---
@@ -519,10 +530,10 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
             tags = form.cleaned_data["tags"]
 
             result = _parse_page_ranges(request.POST, start, end)
-            if "errors" in result:
-                page_range_errors = cast("PageRangeParseFailure", result)["errors"]
-            else:
-                page_lookup = cast("PageRangeParseSuccess", result)["page_lookup"]["exercise_to_page"]
+            if _is_page_range_parse_failure(result):
+                page_range_errors = result["errors"]
+            elif _is_page_range_parse_success(result):
+                page_lookup = result["page_lookup"]["exercise_to_page"]
 
                 for n in range(start, end + 1):
                     Exercise.objects.create(

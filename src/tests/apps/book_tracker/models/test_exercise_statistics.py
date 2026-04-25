@@ -1,5 +1,4 @@
 import datetime  # noqa: INP001
-from typing import cast
 
 import pytest
 
@@ -11,7 +10,7 @@ pytestmark = pytest.mark.django_db
 
 class TestExerciseStatistics:
     def test_returns_defaults_when_no_practice_logs(self) -> None:
-        exercise = cast("Exercise", ExerciseFactory())
+        exercise: Exercise = ExerciseFactory()
 
         assert exercise.tempi_practiced() == []
         assert exercise.minimum_tempo() == 0
@@ -27,7 +26,7 @@ class TestExerciseStatistics:
         assert exercise.first_practiced() is None
 
     def test_calculates_statistics_from_practice_logs(self) -> None:
-        exercise = cast("Exercise", ExerciseFactory())
+        exercise: Exercise = ExerciseFactory()
         older = datetime.date(2026, 4, 20)
         newer = datetime.date(2026, 4, 23)
 
