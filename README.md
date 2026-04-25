@@ -47,7 +47,7 @@ Docker Compose reads these from the root `.env` file.
 Development uses the Compose override file automatically and starts the Django dev server with file sync and a debug port.
 
 ```bash
-docker compose up --build
+docker compose -f compose.yml -f compose.dev.yml up --build --watch
 ```
 
 Once the containers are up:
@@ -84,11 +84,14 @@ python manage.py runserver
 
 ## Tests And Checks
 
-Run the test suite locally:
+Run the test suite locally (fast path, no Docker):
 
 ```bash
 uv run pytest
 ```
+
+Local pytest uses `core.settings_local_test`, which stores test data in
+`src/db_test.sqlite3` and does not require PostgreSQL.
 
 Run the test suite in Docker (matches CI):
 
