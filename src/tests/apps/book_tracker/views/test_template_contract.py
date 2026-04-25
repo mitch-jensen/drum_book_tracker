@@ -1,4 +1,4 @@
-from http import HTTPStatus
+from http import HTTPStatus  # noqa: INP001
 from typing import TYPE_CHECKING
 
 import pytest
