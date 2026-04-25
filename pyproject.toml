@@ -23,13 +23,13 @@ dev = [
     "djlint>=1.36.4",
     "identify>=2.6.19",
     "pre-commit>=4.6.0",
-    "pyrefly>=0.62.0",
     "ruff>=0.15.11",
 ]
 test = [
     "factory-boy>=3.3.3",
     "playwright>=1.58.0",
     "pytest>=9.0.3",
+    "pyrefly>=0.62.0",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.12.0",
     "pytest-playwright>=0.7.0",
