@@ -24,7 +24,7 @@ class TestSectionViews:
         assert b"Sections" in response.content
 
     def test_create_success_returns_list_partial(self, client: Client) -> None:
-        book = BookFactory(title="Stick Control")
+        book = BookFactory.create(title="Stick Control")
 
         response = client.post(
             reverse("section-create"),
@@ -48,7 +48,7 @@ class TestSectionViews:
         assert b"This field is required." in response.content
 
     def test_row_and_edit_render_for_existing_section(self, client: Client) -> None:
-        section = SectionFactory(title="Chapter 1", order=1)
+        section = SectionFactory.create(title="Chapter 1", order=1)
 
         row_response = client.get(reverse("section-row", args=[section.pk]), **HTMX_HEADERS)
         edit_response = client.get(reverse("section-edit", args=[section.pk]), **HTMX_HEADERS)
@@ -59,7 +59,7 @@ class TestSectionViews:
         assert b"Save" in edit_response.content
 
     def test_update_success_and_validation_error_paths(self, client: Client) -> None:
-        section = SectionFactory(title="Chapter 1", order=1)
+        section = SectionFactory.create(title="Chapter 1", order=1)
 
         success = client.post(
             reverse("section-update", args=[section.pk]),

@@ -23,8 +23,8 @@ class TestTagList:
         assert b"Tags" in response.content
 
     def test_lists_existing_tags(self, client: Client) -> None:
-        TagFactory(name="rudiment")
-        TagFactory(name="groove")
+        TagFactory.create(name="rudiment")
+        TagFactory.create(name="groove")
 
         response = client.get(reverse("tag-list"))
 
@@ -86,7 +86,7 @@ class TestTagCreate:
         assert b"This field is required." in response.content
 
     def test_validation_error_duplicate_name(self, client: Client) -> None:
-        TagFactory(name="rudiment")
+        TagFactory.create(name="rudiment")
 
         response = client.post(
             reverse("tag-create"),
@@ -192,4 +192,4 @@ class TestTagUpdate:
 
 @pytest.fixture
 def tag() -> Tag:
-    return TagFactory(name="rudiment")  # pyrefly: ignore[bad-return]
+    return TagFactory.create(name="rudiment")  # pyrefly: ignore[bad-return]

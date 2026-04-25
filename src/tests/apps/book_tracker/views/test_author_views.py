@@ -1,4 +1,4 @@
-from http import HTTPStatus
+from http import HTTPStatus  # noqa: INP001
 from typing import TYPE_CHECKING
 
 import pytest
@@ -23,8 +23,8 @@ class TestAuthorList:
         assert b"Authors" in response.content
 
     def test_lists_existing_authors(self, client: Client) -> None:
-        AuthorFactory(first_name="George", last_name="Stone")
-        AuthorFactory(first_name="Ted", last_name="Reed")
+        AuthorFactory.create(first_name="George", last_name="Stone")
+        AuthorFactory.create(first_name="Ted", last_name="Reed")
 
         response = client.get(reverse("author-list"))
 

@@ -15,13 +15,13 @@ pytestmark = pytest.mark.django_db
 
 class TestExerciseListTagFiltering:
     def test_filters_by_single_tag(self, client: Client) -> None:
-        groove = TagFactory(name="groove")
-        rudiment = TagFactory(name="rudiment")
+        groove = TagFactory.create(name="groove")
+        rudiment = TagFactory.create(name="rudiment")
 
-        matching = ExerciseFactory(description="Groove exercise")
+        matching = ExerciseFactory.create(description="Groove exercise")
         matching.tags.add(groove)
 
-        non_matching = ExerciseFactory(description="Rudiment exercise")
+        non_matching = ExerciseFactory.create(description="Rudiment exercise")
         non_matching.tags.add(rudiment)
 
         response = client.get(reverse("exercise-list"), {"tags": [str(groove.id)]})
@@ -32,17 +32,17 @@ class TestExerciseListTagFiltering:
         assert "Rudiment exercise" not in content
 
     def test_filters_by_multiple_tags(self, client: Client) -> None:
-        groove = TagFactory(name="groove")
-        rudiment = TagFactory(name="rudiment")
-        linear = TagFactory(name="linear")
+        groove = TagFactory.create(name="groove")
+        rudiment = TagFactory.create(name="rudiment")
+        linear = TagFactory.create(name="linear")
 
-        groove_exercise = ExerciseFactory(description="Groove exercise")
+        groove_exercise = ExerciseFactory.create(description="Groove exercise")
         groove_exercise.tags.add(groove)
 
-        rudiment_exercise = ExerciseFactory(description="Rudiment exercise")
+        rudiment_exercise = ExerciseFactory.create(description="Rudiment exercise")
         rudiment_exercise.tags.add(rudiment)
 
-        other_exercise = ExerciseFactory(description="Linear exercise")
+        other_exercise = ExerciseFactory.create(description="Linear exercise")
         other_exercise.tags.add(linear)
 
         response = client.get(reverse("exercise-list"), {"tags": [str(groove.id), str(rudiment.id)]})

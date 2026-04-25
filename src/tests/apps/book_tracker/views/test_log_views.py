@@ -34,9 +34,9 @@ class TestLogOptionsViews:
 
 class TestPracticeLogCrudViews:
     def test_create_success_and_validation_error_paths(self, client: Client) -> None:
-        book = BookFactory(page_count=100)
-        section = SectionFactory(book=book, order=1)
-        exercise = ExerciseFactory(section=section, identifier="1", page_number=7)
+        book = BookFactory.create(page_count=100)
+        section = SectionFactory.create(book=book, order=1)
+        exercise = ExerciseFactory.create(section=section, identifier="1", page_number=7)
 
         success = client.post(
             reverse("log-create"),
@@ -78,7 +78,7 @@ class TestPracticeLogCrudViews:
         assert b"This field is required." in invalid.content
 
     def test_row_edit_and_update_paths(self, client: Client) -> None:
-        log = PracticeLogFactory(tempo=90)
+        log = PracticeLogFactory.create(tempo=90)
 
         row_response = client.get(reverse("log-row", args=[log.pk]), **HTMX_HEADERS)
         edit_response = client.get(reverse("log-edit", args=[log.pk]), **HTMX_HEADERS)

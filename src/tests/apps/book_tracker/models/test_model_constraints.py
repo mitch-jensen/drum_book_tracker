@@ -8,49 +8,49 @@ pytestmark = pytest.mark.django_db
 
 
 def test_section_order_must_be_unique_per_book(book: Book) -> None:
-    SectionFactory(book=book, order=1)
+    SectionFactory.create(book=book, order=1)
 
     with pytest.raises(IntegrityError):
-        SectionFactory(book=book, order=1)
+        SectionFactory.create(book=book, order=1)
 
 
 def test_section_order_can_repeat_across_books(book: Book) -> None:
-    other_book = BookFactory()
+    other_book = BookFactory.create()
 
-    SectionFactory(book=book, order=1)
-    repeated_order_section = SectionFactory(book=other_book, order=1)
+    SectionFactory.create(book=book, order=1)
+    repeated_order_section = SectionFactory.create(book=other_book, order=1)
 
     assert repeated_order_section.book_id == other_book.id
 
 
 def test_exercise_identifier_must_be_unique_per_section(section: Section) -> None:
-    ExerciseFactory(section=section, identifier="1")
+    ExerciseFactory.create(section=section, identifier="1")
 
     with pytest.raises(IntegrityError):
-        ExerciseFactory(section=section, identifier="1")
+        ExerciseFactory.create(section=section, identifier="1")
 
 
 def test_exercise_identifier_can_repeat_across_sections(book: Book) -> None:
-    section_1 = SectionFactory(book=book, order=1)
-    section_2 = SectionFactory(book=book, order=2)
+    section_1 = SectionFactory.create(book=book, order=1)
+    section_2 = SectionFactory.create(book=book, order=2)
 
-    ExerciseFactory(section=section_1, identifier="1")
-    repeated_identifier_exercise = ExerciseFactory(section=section_2, identifier="1")
+    ExerciseFactory.create(section=section_1, identifier="1")
+    repeated_identifier_exercise = ExerciseFactory.create(section=section_2, identifier="1")
 
     assert repeated_identifier_exercise.section_id == section_2.id
 
 
 def test_tag_name_is_globally_unique() -> None:
-    TagFactory(name="Paradiddles")
+    TagFactory.create(name="Paradiddles")
 
     with pytest.raises(IntegrityError):
-        TagFactory(name="Paradiddles")
+        TagFactory.create(name="Paradiddles")
 
 
 def test_deleting_book_cascades_to_sections_exercises_and_practice_logs(book: Book) -> None:
-    section = SectionFactory(book=book, order=1)
-    exercise = ExerciseFactory(section=section, identifier="1")
-    PracticeLogFactory(exercise=exercise)
+    section = SectionFactory.create(book=book, order=1)
+    exercise = ExerciseFactory.create(section=section, identifier="1")
+    PracticeLogFactory.create(exercise=exercise)
 
     book.delete()
 

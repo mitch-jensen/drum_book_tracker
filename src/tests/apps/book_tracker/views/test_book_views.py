@@ -25,8 +25,8 @@ class TestBookList:
         assert b"Books" in response.content
 
     def test_lists_existing_books(self, client: Client) -> None:
-        author = AuthorFactory(first_name="George", last_name="Stone")
-        BookFactory(title="Stick Control", page_count=190, authors=[author])
+        author = AuthorFactory.create(first_name="George", last_name="Stone")
+        BookFactory.create(title="Stick Control", page_count=190, authors=[author])
 
         response = client.get(reverse("book-list"))
 
@@ -50,7 +50,7 @@ class TestBookList:
 
 class TestBookCreate:
     def test_creates_book(self, client: Client) -> None:
-        author: Author = AuthorFactory()
+        author: Author = AuthorFactory.create()
 
         response = client.post(
             reverse("book-create"),
@@ -62,7 +62,7 @@ class TestBookCreate:
         assert Book.objects.filter(title="Stick Control").exists()
 
     def test_success_retargets_to_full_list(self, client: Client) -> None:
-        author: Author = AuthorFactory()
+        author: Author = AuthorFactory.create()
 
         response = client.post(
             reverse("book-create"),
@@ -74,7 +74,7 @@ class TestBookCreate:
         assert response["HX-Reswap"] == "innerHTML"
 
     def test_success_renders_new_book_in_list(self, client: Client) -> None:
-        author: Author = AuthorFactory(first_name="George", last_name="Stone")
+        author: Author = AuthorFactory.create(first_name="George", last_name="Stone")
 
         response = client.post(
             reverse("book-create"),
@@ -86,7 +86,7 @@ class TestBookCreate:
         assert b"George Stone" in response.content
 
     def test_validation_error_missing_title(self, client: Client) -> None:
-        author: Author = AuthorFactory()
+        author: Author = AuthorFactory.create()
 
         response = client.post(
             reverse("book-create"),
@@ -99,7 +99,7 @@ class TestBookCreate:
         assert b"This field is required." in response.content
 
     def test_validation_error_missing_page_count(self, client: Client) -> None:
-        author: Author = AuthorFactory()
+        author: Author = AuthorFactory.create()
 
         response = client.post(
             reverse("book-create"),
@@ -121,7 +121,7 @@ class TestBookCreate:
         assert not Book.objects.exists()
 
     def test_rejects_non_htmx_request(self, client: Client) -> None:
-        author: Author = AuthorFactory()
+        author: Author = AuthorFactory.create()
 
         response = client.post(
             reverse("book-create"),
