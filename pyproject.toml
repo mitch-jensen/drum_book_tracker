@@ -68,10 +68,21 @@ fixable = ["ALL"]
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "core.settings"
+DJANGO_SETTINGS_MODULE = "core.settings_local_test"
 pythonpath = ["src"]
 
 [tool.bandit]
 exclude_dirs = ["src/tests"]
 tests = ["B201", "B301"]
 skips = ["B101", "B601"]
+
+[tool.pyrefly]
+project-excludes = [
+    "src/manage.py",
+    "src/book_tracker/migrations/**/*",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+]
+infer-with-first-use = false
