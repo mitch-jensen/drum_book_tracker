@@ -196,7 +196,7 @@ Keep tests green. Don't add behavior.
 ### LINT - Mandatory Quality Gate
 
 After refactor and green tests:
-- Run `uv run ruff check .`
+- Run `uv run ruff check . --output-format json` from repository root
 - Resolve lint findings in files touched by your change before handoff
 - Re-run targeted tests if lint fixes change behavior-sensitive code
 

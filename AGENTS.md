@@ -54,7 +54,7 @@ Required RED/GREEN loop:
 3. GREEN: Implement the minimal code needed to pass.
 4. Verify GREEN: Re-run targeted tests, then run the full affected test scope.
 5. REFACTOR: Clean up only while keeping tests green.
-6. LINT (Critical): Run `uv run ruff check .` and resolve all Ruff findings introduced or touched by the change before handoff.
+6. LINT (Critical): Run `uv run ruff check . --output-format json` and resolve all Ruff findings introduced or touched by the change before handoff.
 7. TYPECHECK (Critical): Run `uvx pyrefly check --config pyproject.toml --output-format json` from the repository root and resolve type errors introduced or touched by the change before handoff.
 
 If code is written before a failing test, delete/rework it and re-enter the cycle from RED.
@@ -97,9 +97,9 @@ Minimum completion bar for a change:
 ### Python
 
 - Lint:
-  - `uv run ruff check .`
+  - `uv run ruff check . --output-format json`
 - Auto-fix lint issues when safe:
-  - `uv run ruff check . --fix`
+  - `uv run ruff check . --fix --output-format json`
 - Format:
   - `uv run ruff format .`
 
@@ -159,7 +159,7 @@ Before handing off a change:
 - Migrate: `uv run python src/manage.py migrate`
 - Dev server: `uv run python src/manage.py runserver`
 - Tests: `uv run pytest`
-- Lint: `uv run ruff check .`
+- Lint: `uv run ruff check . --output-format json`
 - Format: `uv run ruff format .`
 - Typecheck: `uvx pyrefly check --config pyproject.toml --output-format json`
 - Templates: `uv run djlint src/book_tracker/templates`
