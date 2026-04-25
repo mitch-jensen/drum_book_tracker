@@ -1,5 +1,5 @@
-from http import HTTPStatus
-from typing import TYPE_CHECKING
+from http import HTTPStatus  # noqa: INP001
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.http import QueryDict
@@ -16,6 +16,8 @@ from tests.factories import ExerciseFactory, SectionFactory, TagFactory
 if TYPE_CHECKING:
     from django.test import Client
 
+    from book_tracker.models import Section, Tag
+
 pytestmark = pytest.mark.django_db
 
 HTMX_HEADERS = {"HTTP_HX-Request": "true"}
@@ -23,8 +25,8 @@ HTMX_HEADERS = {"HTTP_HX-Request": "true"}
 
 class TestExerciseCrudViews:
     def test_create_success_and_validation_error_paths(self, client: Client) -> None:
-        section = SectionFactory()
-        tag = TagFactory(name="rudiment")
+        section = cast("Section", SectionFactory())
+        tag = cast("Tag", TagFactory(name="rudiment"))
 
         success = client.post(
             reverse("exercise-create"),
@@ -56,7 +58,7 @@ class TestExerciseCrudViews:
         assert b"This field is required." in error.content
 
     def test_row_edit_and_update_paths(self, client: Client) -> None:
-        exercise = ExerciseFactory(identifier="1", description="Single strokes")
+        exercise = cast("Exercise", ExerciseFactory(identifier="1", description="Single strokes"))
 
         row_response = client.get(reverse("exercise-row", args=[exercise.pk]), **HTMX_HEADERS)
         edit_response = client.get(reverse("exercise-edit", args=[exercise.pk]), **HTMX_HEADERS)
@@ -93,7 +95,7 @@ class TestExerciseCrudViews:
 
 class TestExerciseBulkCreatePageRangeValidation:
     def test_requires_at_least_one_page_range(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -108,7 +110,7 @@ class TestExerciseBulkCreatePageRangeValidation:
         assert b"At least one page range is required." in response.content
 
     def test_rejects_non_integer_values_and_out_of_bounds_and_non_positive_pages(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),

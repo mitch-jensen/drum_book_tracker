@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from django import template
 
@@ -21,4 +21,4 @@ def widget_sm(bound_field: BoundField) -> SafeText:
     if bound_field.errors:
         classes += " is-invalid"
     attrs["class"] = classes.strip()
-    return bound_field.as_widget(attrs=attrs)
+    return cast("SafeText", cast("Any", bound_field).as_widget(attrs=attrs))

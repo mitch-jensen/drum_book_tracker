@@ -1,11 +1,11 @@
-import datetime
+import datetime  # noqa: INP001
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.urls import reverse
 
-from book_tracker.models import PracticeLog
+from book_tracker.models import Book, Exercise, PracticeLog, Section
 from tests.factories import BookFactory, ExerciseFactory, PracticeLogFactory, SectionFactory
 
 if TYPE_CHECKING:
@@ -34,9 +34,9 @@ class TestLogOptionsViews:
 
 class TestPracticeLogCrudViews:
     def test_create_success_and_validation_error_paths(self, client: Client) -> None:
-        book = BookFactory(page_count=100)
-        section = SectionFactory(book=book, order=1)
-        exercise = ExerciseFactory(section=section, identifier="1", page_number=7)
+        book = cast("Book", BookFactory(page_count=100))
+        section = cast("Section", SectionFactory(book=book, order=1))
+        exercise = cast("Exercise", ExerciseFactory(section=section, identifier="1", page_number=7))
 
         success = client.post(
             reverse("log-create"),
@@ -78,7 +78,7 @@ class TestPracticeLogCrudViews:
         assert b"This field is required." in invalid.content
 
     def test_row_edit_and_update_paths(self, client: Client) -> None:
-        log = PracticeLogFactory(tempo=90)
+        log = cast("PracticeLog", PracticeLogFactory(tempo=90))
 
         row_response = client.get(reverse("log-row", args=[log.pk]), **HTMX_HEADERS)
         edit_response = client.get(reverse("log-edit", args=[log.pk]), **HTMX_HEADERS)

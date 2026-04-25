@@ -1,6 +1,6 @@
-from http import HTTPStatus
+from http import HTTPStatus  # noqa: INP001
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -11,6 +11,8 @@ from tests.factories import ExerciseFactory
 
 if TYPE_CHECKING:
     from django.test import Client
+
+    from book_tracker.models import Exercise
 
 pytestmark = pytest.mark.django_db
 
@@ -26,7 +28,7 @@ def _create_test_image() -> SimpleUploadedFile:
 
 class TestExerciseUploadNotation:
     def test_uploads_notation_image(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         image = _create_test_image()
 
         response = client.post(
@@ -39,7 +41,7 @@ class TestExerciseUploadNotation:
         assert exercise.notation_image
 
     def test_replaces_existing_image(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         image1 = _create_test_image()
         client.post(reverse("exercise-upload-notation", args=[exercise.pk]), {"notation_image": image1})
         exercise.refresh_from_db()
@@ -56,12 +58,12 @@ class TestExerciseUploadNotation:
         assert exercise.notation_image
 
     def test_rejects_get_request(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         response = client.get(reverse("exercise-upload-notation", args=[exercise.pk]))
         assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     def test_redirects_to_detail(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         image = _create_test_image()
 
         response = client.post(
@@ -70,12 +72,12 @@ class TestExerciseUploadNotation:
         )
 
         assert response.status_code == HTTPStatus.FOUND
-        assert response.url == reverse("exercise-detail", args=[exercise.pk])
+        assert response["Location"] == reverse("exercise-detail", args=[exercise.pk])
 
 
 class TestExerciseDetailNotation:
     def test_shows_upload_form(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
 
         response = client.get(reverse("exercise-detail", args=[exercise.pk]))
 
@@ -85,7 +87,7 @@ class TestExerciseDetailNotation:
         assert "Notation Image" in content
 
     def test_shows_image_when_uploaded(self, client: Client) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         image = _create_test_image()
         client.post(reverse("exercise-upload-notation", args=[exercise.pk]), {"notation_image": image})
 

@@ -1,8 +1,9 @@
-import datetime
+import datetime  # noqa: INP001
+from typing import cast
 
 import pytest
 
-from book_tracker.models import PracticeLog
+from book_tracker.models import Exercise, PracticeLog
 from tests.factories import ExerciseFactory, PracticeLogFactory
 
 pytestmark = pytest.mark.django_db
@@ -10,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 class TestExerciseStatistics:
     def test_returns_defaults_when_no_practice_logs(self) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
 
         assert exercise.tempi_practiced() == []
         assert exercise.minimum_tempo() == 0
@@ -26,7 +27,7 @@ class TestExerciseStatistics:
         assert exercise.first_practiced() is None
 
     def test_calculates_statistics_from_practice_logs(self) -> None:
-        exercise = ExerciseFactory()
+        exercise = cast("Exercise", ExerciseFactory())
         older = datetime.date(2026, 4, 20)
         newer = datetime.date(2026, 4, 23)
 

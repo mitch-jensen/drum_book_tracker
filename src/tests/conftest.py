@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -10,29 +10,29 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def author() -> Author:
-    return AuthorFactory(first_name="George", last_name="Stone")
+    return cast("Author", AuthorFactory(first_name="George", last_name="Stone"))
 
 
 @pytest.fixture
 def book(author: Author) -> Book:
-    return BookFactory(title="Stick Control", page_count=190, authors=[author])
+    return cast("Book", BookFactory(title="Stick Control", page_count=190, authors=[author]))
 
 
 @pytest.fixture
 def section(book: Book) -> Section:
-    return SectionFactory(book=book, title="Chapter 1", order=1)
+    return cast("Section", SectionFactory(book=book, title="Chapter 1", order=1))
 
 
 @pytest.fixture
 def exercise(section: Section) -> Exercise:
-    return ExerciseFactory(section=section, identifier="1")
+    return cast("Exercise", ExerciseFactory(section=section, identifier="1"))
 
 
 @pytest.fixture
 def tag() -> Tag:
-    return TagFactory(name="Paradiddles")
+    return cast("Tag", TagFactory(name="Paradiddles"))
 
 
 @pytest.fixture
 def practice_log(exercise: Exercise) -> PracticeLog:
-    return PracticeLogFactory(exercise=exercise, tempo=120)
+    return cast("PracticeLog", PracticeLogFactory(exercise=exercise, tempo=120))

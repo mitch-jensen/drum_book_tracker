@@ -1,5 +1,5 @@
-from http import HTTPStatus
-from typing import TYPE_CHECKING
+from http import HTTPStatus  # noqa: INP001
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.urls import reverse
@@ -192,4 +192,4 @@ class TestTagUpdate:
 
 @pytest.fixture
 def tag() -> Tag:
-    return TagFactory(name="rudiment")
+    return cast("Tag", TagFactory(name="rudiment"))

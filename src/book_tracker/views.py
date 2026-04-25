@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, NamedTuple, TypedDict
+from typing import TYPE_CHECKING, NamedTuple, TypedDict, cast
 
 from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -393,7 +393,7 @@ def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return redirect("exercise-detail", pk=pk)
 
 
-def _parse_page_range_row(
+def _parse_page_range_row(  # noqa: PLR0913
     *,
     row_index: int,
     raw_start: str,
@@ -430,7 +430,7 @@ def _parse_page_range_row(
 
 
 def _find_page_range_overlaps(parsed_ranges: list[PageRange]) -> list[str]:
-    if len(parsed_ranges) < 2:
+    if len(parsed_ranges) < 2:  # noqa: PLR2004
         return []
 
     overlaps: list[str] = []
@@ -520,9 +520,9 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
 
             result = _parse_page_ranges(request.POST, start, end)
             if "errors" in result:
-                page_range_errors = result["errors"]
+                page_range_errors = cast("PageRangeParseFailure", result)["errors"]
             else:
-                page_lookup = result["page_lookup"]["exercise_to_page"]
+                page_lookup = cast("PageRangeParseSuccess", result)["page_lookup"]["exercise_to_page"]
 
                 for n in range(start, end + 1):
                     Exercise.objects.create(

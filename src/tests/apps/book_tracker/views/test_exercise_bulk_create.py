@@ -1,5 +1,5 @@
-from http import HTTPStatus
-from typing import TYPE_CHECKING
+from http import HTTPStatus  # noqa: INP001
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.urls import reverse
@@ -9,6 +9,8 @@ from tests.factories import ExerciseFactory, SectionFactory, TagFactory
 
 if TYPE_CHECKING:
     from django.test import Client
+
+    from book_tracker.models import Section, Tag
 
 pytestmark = pytest.mark.django_db
 
@@ -40,7 +42,7 @@ class TestExerciseBulkCreateGet:
 
 class TestExerciseBulkCreatePost:
     def test_creates_exercises(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -61,7 +63,7 @@ class TestExerciseBulkCreatePost:
             assert ex.page_number == 10
 
     def test_creates_exercises_with_multiple_page_ranges(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -81,9 +83,9 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.get(section=section, identifier="8").page_number == 21
 
     def test_applies_tags_to_all_exercises(self, client: Client) -> None:
-        section = SectionFactory()
-        tag1 = TagFactory(name="Singles")
-        tag2 = TagFactory(name="Doubles")
+        section = cast("Section", SectionFactory())
+        tag1 = cast("Tag", TagFactory(name="Singles"))
+        tag2 = cast("Tag", TagFactory(name="Doubles"))
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -104,7 +106,7 @@ class TestExerciseBulkCreatePost:
             assert set(ex.tags.values_list("name", flat=True)) == {"Singles", "Doubles"}
 
     def test_start_greater_than_end_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -123,7 +125,7 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.count() == 0
 
     def test_page_range_from_greater_than_to_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -143,7 +145,7 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.count() == 0
 
     def test_conflicting_identifiers_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
         ExerciseFactory(section=section, identifier="3")
 
         response = client.post(
@@ -164,7 +166,7 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.filter(section=section).count() == 1
 
     def test_overlapping_page_ranges_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -183,7 +185,7 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.count() == 0
 
     def test_incomplete_coverage_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -202,7 +204,7 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.count() == 0
 
     def test_missing_page_range_fields_shows_error(self, client: Client) -> None:
-        section = SectionFactory()
+        section = cast("Section", SectionFactory())
 
         response = client.post(
             reverse("exercise-bulk-create"),

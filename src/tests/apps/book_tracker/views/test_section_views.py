@@ -1,5 +1,5 @@
-from http import HTTPStatus
-from typing import TYPE_CHECKING
+from http import HTTPStatus  # noqa: INP001
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from django.urls import reverse
@@ -9,6 +9,8 @@ from tests.factories import BookFactory, SectionFactory
 
 if TYPE_CHECKING:
     from django.test import Client
+
+    from book_tracker.models import Book
 
 pytestmark = pytest.mark.django_db
 
@@ -23,7 +25,7 @@ class TestSectionViews:
         assert b"Sections" in response.content
 
     def test_create_success_returns_list_partial(self, client: Client) -> None:
-        book = BookFactory(title="Stick Control")
+        book = cast("Book", BookFactory(title="Stick Control"))
 
         response = client.post(
             reverse("section-create"),
@@ -47,7 +49,7 @@ class TestSectionViews:
         assert b"This field is required." in response.content
 
     def test_row_and_edit_render_for_existing_section(self, client: Client) -> None:
-        section = SectionFactory(title="Chapter 1", order=1)
+        section = cast("Section", SectionFactory(title="Chapter 1", order=1))
 
         row_response = client.get(reverse("section-row", args=[section.pk]), **HTMX_HEADERS)
         edit_response = client.get(reverse("section-edit", args=[section.pk]), **HTMX_HEADERS)
@@ -58,7 +60,7 @@ class TestSectionViews:
         assert b"Save" in edit_response.content
 
     def test_update_success_and_validation_error_paths(self, client: Client) -> None:
-        section = SectionFactory(title="Chapter 1", order=1)
+        section = cast("Section", SectionFactory(title="Chapter 1", order=1))
 
         success = client.post(
             reverse("section-update", args=[section.pk]),
