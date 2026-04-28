@@ -23,7 +23,7 @@ dev = [
     "djlint>=1.36.4",
     "identify>=2.6.19",
     "pre-commit>=4.6.0",
-    "pyrefly>=0.62.0",
+    "pyrefly>=0.63.0",
     "ruff>=0.15.11",
 ]
 test = [
