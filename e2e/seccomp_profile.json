@@ -1,0 +1,12 @@
+{
+    "action": "SCMP_ACT_ALLOW",
+    "args": [],
+    "comment": "Allow create user namespaces",
+    "excludes": {},
+    "includes": {},
+    "names": [
+        "clone",
+        "setns",
+        "unshare"
+    ]
+}
