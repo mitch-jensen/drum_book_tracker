@@ -1,23 +1,13 @@
-from django.urls import path
+from django.urls import include, path
 
 from book_tracker import views
 
+app_name = "book_tracker"
+
 urlpatterns = [
-    path("authors/", views.author_list, name="author-list"),
-    path("authors/create/", views.author_create, name="author-create"),
-    path("authors/<str:pk>/", views.author_row, name="author-row"),
-    path("authors/<str:pk>/edit/", views.author_edit, name="author-edit"),
-    path("authors/<str:pk>/update/", views.author_update, name="author-update"),
-    path("tags/", views.tag_list, name="tag-list"),
-    path("tags/create/", views.tag_create, name="tag-create"),
-    path("tags/<str:pk>/", views.tag_row, name="tag-row"),
-    path("tags/<str:pk>/edit/", views.tag_edit, name="tag-edit"),
-    path("tags/<str:pk>/update/", views.tag_update, name="tag-update"),
-    path("books/", views.book_list, name="book-list"),
-    path("books/create/", views.book_create, name="book-create"),
-    path("books/<str:pk>/", views.book_row, name="book-row"),
-    path("books/<str:pk>/edit/", views.book_edit, name="book-edit"),
-    path("books/<str:pk>/update/", views.book_update, name="book-update"),
+    path("authors/", include("book_tracker.urls.author")),
+    path("tags/", include("book_tracker.urls.tag")),
+    path("books/", include("book_tracker.urls.book")),
     path("sections/", views.section_list, name="section-list"),
     path("sections/create/", views.section_create, name="section-create"),
     path("sections/<str:pk>/", views.section_row, name="section-row"),
@@ -29,6 +19,7 @@ urlpatterns = [
     path("exercises/page-range-row/", views.page_range_row, name="page-range-row"),
     path("exercises/<str:pk>/", views.exercise_row, name="exercise-row"),
     path("exercises/<str:pk>/detail/", views.exercise_detail, name="exercise-detail"),
+    path("exercises/<str:pk>/detail/quick-log/", views.exercise_quick_log, name="exercise-quick-log"),
     path("exercises/<str:pk>/upload-notation/", views.exercise_upload_notation, name="exercise-upload-notation"),
     path("exercises/<str:pk>/edit/", views.exercise_edit, name="exercise-edit"),
     path("exercises/<str:pk>/update/", views.exercise_update, name="exercise-update"),
