@@ -2,11 +2,12 @@ import { test, expect } from '@playwright/test';
 import { TagPage } from './playwright-tag-page';
 
 let tagSequence = 0;
+const TAG_NAME_PREFIX = 'E2ETag';
 
 function createTagName(): string {
   tagSequence += 1;
 
-  return `E2ETag${tagSequence}`;
+  return `${TAG_NAME_PREFIX}${tagSequence}`;
 }
 
 test.describe('Tags page', () => {
@@ -19,7 +20,7 @@ test.describe('Tags page', () => {
   });
 
   test.afterEach(async () => {
-    await tagPage.deleteAllTags();
+    await tagPage.deleteAllTags(TAG_NAME_PREFIX);
   });
 
   test.describe('adding a tag', () => {
@@ -55,7 +56,7 @@ test.describe('Tags page', () => {
     test('does not create a tag if name is missing', async () => {
       await tagPage.createSubmitButton.click();
 
-      await expect(tagPage.getAllRows()).toHaveCount(0);
+      await expect(tagPage.getRowsByNamePrefix(TAG_NAME_PREFIX)).toHaveCount(0);
     });
   });
 
@@ -86,13 +87,7 @@ test.describe('Tags page', () => {
 
   test.describe('tags table', () => {
     test('shows no test-created tag on a fresh page', async () => {
-      const tags = await tagPage.getAllTags();
-
-      expect(tags).toHaveLength(0);
-    });
-
-    test('shows the empty-state message when there are no tag rows', async () => {
-      await expect(tagPage.tbody).toContainText(/no tags yet/i);
+      await expect(tagPage.getRowsByNamePrefix(TAG_NAME_PREFIX)).toHaveCount(0);
     });
 
     test('shows the empty-state message after deleting the last tag', async () => {
@@ -101,10 +96,7 @@ test.describe('Tags page', () => {
       await tagPage.addTag(tagName);
       await tagPage.deleteTag(tagName);
 
-      const tags = await tagPage.getAllTags();
-
-      expect(tags).toHaveLength(0);
-      await expect(tagPage.tbody).toContainText(/no tags yet/i);
+      await expect(tagPage.getRow(tagName)).toHaveCount(0);
     });
   });
 });

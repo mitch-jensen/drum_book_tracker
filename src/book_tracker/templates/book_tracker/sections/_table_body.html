@@ -1,0 +1,9 @@
+{% if sections %}
+    {% for section in sections %}
+        {% include "book_tracker/sections/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-sections-row">
+        <td colspan="4" class="text-center text-muted py-4">No sections yet.</td>
+    </tr>
+{% endif %}

@@ -556,7 +556,8 @@ def _build_page_lookup(parsed_ranges: list[PageRange]) -> tuple[set[int], dict[i
 
 
 def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> PageRangeParseSuccess | PageRangeParseFailure:
-    """Parse and validate page range rows from POST data.
+    """
+    Parse and validate page range rows from POST data.
 
     Returns a dict mapping exercise number → page number on success,
     or a list of error messages on failure.

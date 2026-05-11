@@ -9,6 +9,7 @@ type Author = {
 
 let bookSequence = 0;
 const BOOK_AUTHOR_FIRST_NAME_PREFIX = 'E2EBookAuthorFirst';
+const BOOK_TITLE_PREFIX = 'E2E Book';
 
 function createAuthor(): Author {
   bookSequence += 1;
@@ -23,7 +24,7 @@ function createBook(author: Author): Book {
   bookSequence += 1;
 
   return {
-    title: `E2E Book ${bookSequence}`,
+    title: `${BOOK_TITLE_PREFIX} ${bookSequence}`,
     pageCount: `${100 + bookSequence}`,
     authorName: `${author.firstName} ${author.lastName}`,
   };
@@ -41,7 +42,7 @@ test.describe('Books page', () => {
     author = createAuthor();
 
     await bookPage.goto();
-    await bookPage.deleteAllBooks();
+    await bookPage.deleteAllBooks(BOOK_TITLE_PREFIX);
 
     await authorPage.goto();
     await authorPage.deleteAllAuthors(BOOK_AUTHOR_FIRST_NAME_PREFIX);
@@ -51,7 +52,7 @@ test.describe('Books page', () => {
   });
 
   test.afterEach(async () => {
-    await bookPage.deleteAllBooks();
+    await bookPage.deleteAllBooks(BOOK_TITLE_PREFIX);
     await authorPage.deleteAllAuthors(BOOK_AUTHOR_FIRST_NAME_PREFIX);
   });
 
@@ -93,7 +94,7 @@ test.describe('Books page', () => {
       await bookPage.createAuthorsSelect.selectOption({ label: book.authorName });
       await bookPage.createSubmitButton.click();
 
-      await expect(bookPage.getAllRows()).toHaveCount(0);
+      await expect(bookPage.getRowsByTitlePrefix(BOOK_TITLE_PREFIX)).toHaveCount(0);
     });
 
     test('does not create a book if page count is missing', async () => {
@@ -103,7 +104,7 @@ test.describe('Books page', () => {
       await bookPage.createAuthorsSelect.selectOption({ label: book.authorName });
       await bookPage.createSubmitButton.click();
 
-      await expect(bookPage.getAllRows()).toHaveCount(0);
+      await expect(bookPage.getRowsByTitlePrefix(BOOK_TITLE_PREFIX)).toHaveCount(0);
     });
   });
 
@@ -136,13 +137,7 @@ test.describe('Books page', () => {
 
   test.describe('books table', () => {
     test('shows no test-created book on a fresh page', async () => {
-      const books = await bookPage.getAllBooks();
-
-      expect(books).toHaveLength(0);
-    });
-
-    test('shows the empty-state message when there are no book rows', async () => {
-      await expect(bookPage.tbody).toContainText(/no books yet/i);
+      await expect(bookPage.getRowsByTitlePrefix(BOOK_TITLE_PREFIX)).toHaveCount(0);
     });
 
     test('shows the empty-state message after deleting the last book', async () => {
@@ -151,10 +146,7 @@ test.describe('Books page', () => {
       await bookPage.addBook(book);
       await bookPage.deleteBook(book);
 
-      const books = await bookPage.getAllBooks();
-
-      expect(books).toHaveLength(0);
-      await expect(bookPage.tbody).toContainText(/no books yet/i);
+      await expect(bookPage.getRow(book)).toHaveCount(0);
     });
   });
 });

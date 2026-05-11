@@ -66,12 +66,22 @@ export class TagPage {
         await expect(this.getAllRows()).toHaveCount(initialCount - 1);
     }
 
-    async deleteAllTags() {
+    getRowsByNamePrefix(namePrefix: string): Locator {
+        return this.getAllRows().filter({
+            has: this.page.getByRole('cell', {
+                name: new RegExp(`^${namePrefix}`),
+            }),
+        });
+    }
+
+    async deleteAllTags(namePrefix?: string) {
         await this.goto();
 
-        while ((await this.getAllRows().count()) > 0) {
-            const initialCount = await this.tagCount();
-            const row = this.getAllRows().first();
+        const rows = namePrefix === undefined ? this.getAllRows() : this.getRowsByNamePrefix(namePrefix);
+
+        while ((await rows.count()) > 0) {
+            const initialCount = await rows.count();
+            const row = rows.first();
 
             await expect(row).toBeVisible();
             await row.getByRole('button', { name: /^delete$/i }).click();
@@ -83,11 +93,14 @@ export class TagPage {
             await expect(confirmButton).toBeVisible();
             await confirmButton.click();
 
-            await expect(this.getAllRows()).toHaveCount(initialCount - 1);
+            await expect(rows).toHaveCount(initialCount - 1);
         }
 
-        await expect(this.getAllRows()).toHaveCount(0);
-        await expect(this.tbody).toContainText(/no tags yet/i);
+        await expect(rows).toHaveCount(0);
+
+        if (namePrefix === undefined) {
+            await expect(this.tbody).toContainText(/no tags yet/i);
+        }
     }
 
     async openEdit(name: string): Promise<Locator> {

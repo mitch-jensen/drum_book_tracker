@@ -1,0 +1,9 @@
+{% if exercises %}
+    {% for exercise in exercises %}
+        {% include "book_tracker/exercises/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-exercises-row">
+        <td colspan="6" class="text-center text-muted py-4">No exercises yet.</td>
+    </tr>
+{% endif %}

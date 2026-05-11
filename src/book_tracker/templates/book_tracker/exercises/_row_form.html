@@ -1,0 +1,40 @@
+<tr id="exercise-{{ exercise.id }}">
+    <td colspan="6">
+        <form hx-post="{% url 'exercise-update' exercise.id %}"
+              hx-target="#exercise-table-body"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% csrf_token %}
+            <div class="row g-2 align-items-start">
+                <div class="col">
+                    {{ form.section }}
+                    {{ form.section.errors }}
+                </div>
+                <div class="col">
+                    {{ form.identifier }}
+                    {{ form.identifier.errors }}
+                </div>
+                <div class="col">
+                    {{ form.description }}
+                    {{ form.description.errors }}
+                </div>
+                <div class="col">
+                    {{ form.page_number }}
+                    {{ form.page_number.errors }}
+                </div>
+                <div class="col">
+                    {{ form.tags }}
+                    {{ form.tags.errors }}
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-get="{% url 'exercise-row' exercise.id %}"
+                            hx-target="#exercise-{{ exercise.id }}"
+                            hx-swap="outerHTML">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </td>
+</tr>

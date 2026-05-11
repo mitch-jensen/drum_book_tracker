@@ -1,0 +1,58 @@
+<form hx-post="{% url 'log-create' %}"
+      hx-target="#log-create-form"
+      hx-swap="innerHTML"
+      hx-disabled-elt="find button[type='submit']">
+    {% csrf_token %}
+    <div class="row g-2 align-items-start mb-3">
+        <div class="col">
+            <label for="{{ form.book.id_for_label }}" class="form-label">Book</label>
+            {{ form.book }}
+            {{ form.book.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.section.id_for_label }}" class="form-label">Section</label>
+            {{ form.section }}
+            {{ form.section.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.page_number.id_for_label }}" class="form-label">Page</label>
+            {{ form.page_number }}
+            {{ form.page_number.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.exercise.id_for_label }}" class="form-label">Exercise</label>
+            {{ form.exercise }}
+            {{ form.exercise.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.practiced_on.id_for_label }}" class="form-label">Date</label>
+            {{ form.practiced_on }}
+            {{ form.practiced_on.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.tempo.id_for_label }}" class="form-label">Tempo</label>
+            {{ form.tempo }}
+            {{ form.tempo.errors }}
+        </div>
+    </div>
+    <div class="row g-2 align-items-start mb-3">
+        <div class="col">
+            <label for="{{ form.difficulty.id_for_label }}" class="form-label">Difficulty</label>
+            {{ form.difficulty }}
+            {{ form.difficulty.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.relaxation_level.id_for_label }}" class="form-label">Relaxation</label>
+            {{ form.relaxation_level }}
+            {{ form.relaxation_level.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+            {{ form.notes }}
+            {{ form.notes.errors }}
+        </div>
+        <div class="col-auto align-self-end">
+            <button type="submit" class="btn btn-primary">Add Log Entry</button>
+        </div>
+    </div>
+</form>
