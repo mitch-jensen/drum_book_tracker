@@ -11,6 +11,7 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       DATABASE_HOST: db
       DATABASE_PORT: 5432
+      DJANGO_SETTINGS_MODULE: core.settings
     depends_on:
       db:
         condition: service_healthy

@@ -2,12 +2,9 @@
 services:
   backend:
     build:
-      target: test
-    command:
-      - "-lc"
-      - "sleep infinity"
-    healthcheck:
-      disable: true
+      target: development
+    ports:
+      - "127.0.0.1:8000:8000"
     environment:
       BASE_URL: http://backend:8000
       SECRET_KEY: insecure-test-secret-key  # pragma: allowlist secret
@@ -16,6 +13,27 @@ services:
       DATABASE_PASSWORD: test_password  # pragma: allowlist secret
       DATABASE_HOST: db
       DATABASE_PORT: 5432
+      DJANGO_SETTINGS_MODULE: core.settings_e2e
+
+  playwright:
+    build:
+      context: e2e/
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:9323:9323"
+    environment:
+      BASE_URL: http://backend:8000
+    ipc: host
+    security_opt:
+      - seccomp=e2e/seccomp_profile.json
+    init: true
+    command:
+      - "sleep"
+      - "infinity"
+    stop_grace_period: 1s
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     environment:

@@ -1,4 +1,5 @@
-"""Django settings for local test runs without Docker.
+"""
+Django settings for local test runs without Docker.
 
 This module keeps base settings behavior and only swaps the database backend
 for a local SQLite database used by pytest.
