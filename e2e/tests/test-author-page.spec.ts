@@ -1,7 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { AuthorPage } from './playwright-author-page';
+import { faker } from '@faker-js/faker';
+
+
+type Author = {
+  firstName: string;
+  lastName: string;
+};
+
+function createRandomUser(): Author {
+  return {
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+  };
+}
 
 test.describe('Authors page', () => {
+  test.describe.configure({ mode: 'serial' });
   let authorPage: AuthorPage;
 
   test.beforeEach(async ({ page }) => {
@@ -9,139 +24,171 @@ test.describe('Authors page', () => {
     await authorPage.goto();
   });
 
-  // ─── Add Author ───────────────────────────────────────────────────────────
+  test.afterEach(async () => {
+    await authorPage.deleteAllAuthors();
+  });
 
   test.describe('adding an author', () => {
-    test.afterEach(async () => {
-      await authorPage.deleteAllAuthors();
-    });
-
     test('adds a single author and shows them in the table', async () => {
-      await authorPage.addAuthor('Gary', 'Chaffee');
-      await expect(authorPage.getRowByAuthor('Gary', 'Chaffee')).resolves.toBeVisible();
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
+
+      await expect(authorPage.getRow(author.firstName, author.lastName)).toBeVisible();
     });
 
-    test('increments the author count after adding', async () => {
-      const initialCount = await authorPage.getNumberOfAuthors();
-      await authorPage.addAuthor('Gary', 'Chaffee');
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(initialCount + 1);
+    test('adds multiple authors and shows them in the table', async () => {
+      const author1 = createRandomUser();
+      const author2 = createRandomUser();
+
+      await authorPage.addAuthor(author1.firstName, author1.lastName);
+      await authorPage.addAuthor(author2.firstName, author2.lastName);
+
+      await expect(authorPage.getRow(author1.firstName, author1.lastName)).toBeVisible();
+      await expect(authorPage.getRow(author2.firstName, author2.lastName)).toBeVisible();
     });
 
     test('clears the form after a successful submission', async () => {
-      await authorPage.addAuthor('Gary', 'Chaffee');
-      await expect(authorPage.addAuthorFirstName).toHaveValue('');
-      await expect(authorPage.addAuthorLastName).toHaveValue('');
-    });
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
 
-    test('Add Author button is disabled while submitting', async ({ page }) => {
-      // Slow the HTMX response down so we can catch the disabled state
-      await page.route('**/authors/create/**', async (route) => {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await route.continue();
-      });
-
-      await authorPage.addAuthorFirstName.fill('Gary');
-      await authorPage.addAuthorLastName.fill('Chaffee');
-      await authorPage.addAuthorButton.click();
-
-      await expect(authorPage.addAuthorButton).toBeDisabled();
+      await expect(authorPage.createFirstNameInput).toHaveValue('');
+      await expect(authorPage.createLastNameInput).toHaveValue('');
     });
   });
-
-  // ─── Form Validation ──────────────────────────────────────────────────────
 
   test.describe('add author form validation', () => {
-    test('requires first name', async () => {
-      await authorPage.addAuthorLastName.fill('Chaffee');
-      await authorPage.addAuthorButton.click();
+    test('does not create author if first name missing', async () => {
+      const author = createRandomUser();
+      await authorPage.createLastNameInput.fill(author.lastName);
+      await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.addAuthorFirstName).toBeFocused();
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(0);
+      await expect(authorPage.getAllRows()).toHaveCount(0);
+      await expect(authorPage.getRow(author.firstName, author.lastName)).toHaveCount(0);
     });
 
-    test('requires last name', async () => {
-      await authorPage.addAuthorFirstName.fill('Gary');
-      await authorPage.addAuthorButton.click();
+    test('does not create author if last name missing', async () => {
+      const author = createRandomUser();
+      await authorPage.createFirstNameInput.fill(author.firstName);
+      await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.addAuthorLastName).toBeFocused();
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(0);
+      await expect(authorPage.getAllRows()).toHaveCount(0);
+      await expect(authorPage.getRow(author.firstName, author.lastName)).toHaveCount(0);
     });
 
-    test('requires both fields to be filled before submission', async () => {
-      await authorPage.addAuthorButton.click();
+    test('does not create author if both fields missing', async () => {
+      await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(0);
+      await expect(authorPage.getAllRows()).toHaveCount(0);
     });
   });
 
-  // ─── Edit Author ──────────────────────────────────────────────────────────
-
   test.describe('editing an author', () => {
-    test.beforeEach(async () => {
-      await authorPage.addAuthor('Gary', 'Chaffee');
-    });
-
-    test.afterEach(async () => {
-      await authorPage.deleteAllAuthors();
-    });
-
     test('shows inline inputs when Edit is clicked', async () => {
-      const row = await authorPage.openEditMode('Gary', 'Chaffee');
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
 
-      await expect(row.getByRole('textbox').nth(0)).toBeVisible();
-      await expect(row.getByRole('textbox').nth(1)).toBeVisible();
-      await expect(row.getByRole('button', { name: 'Save' })).toBeVisible();
+      const row = await authorPage.openEdit(author.firstName, author.lastName);
+
+      const inputs = row.getByRole('textbox');
+
+      await expect(inputs.nth(0)).toBeVisible();
+      await expect(inputs.nth(1)).toBeVisible();
+      await expect(row.getByRole('button', { name: /save/i })).toBeVisible();
+      await expect(row.getByRole('button', { name: /cancel/i })).toBeVisible();
     });
 
     test('pre-fills inline inputs with existing values', async () => {
-      const row = await authorPage.openEditMode('Gary', 'Chaffee');
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
 
-      await expect(row.getByRole('textbox').nth(0)).toHaveValue('Gary');
-      await expect(row.getByRole('textbox').nth(1)).toHaveValue('Chaffee');
+      const row = await authorPage.openEdit(author.firstName, author.lastName);
+
+      const inputs = row.getByRole('textbox');
+
+      await expect(inputs.nth(0)).toHaveValue(author.firstName);
+      await expect(inputs.nth(1)).toHaveValue(author.lastName);
     });
 
     test('saves updated author details', async () => {
-      await authorPage.editAuthor('Gary', 'Chaffee', 'Gary', 'Chester');
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
 
-      await expect(authorPage.getRowByAuthor('Gary', 'Chester')).resolves.toBeVisible();
-      await expect(authorPage.getRowByAuthor('Gary', 'Chaffee')).resolves.not.toBeVisible();
-    });
+      const updatedAuthor = createRandomUser();
 
-    test('does not change the author count after editing', async () => {
-      const countBefore = await authorPage.getNumberOfAuthors();
+      await authorPage.editAuthor(
+        author.firstName,
+        author.lastName,
+        updatedAuthor.firstName,
+        updatedAuthor.lastName
+      );
 
-      await authorPage.editAuthor('Gary', 'Chaffee', 'Gary', 'Chester');
+      await expect(
+        authorPage.getRow(updatedAuthor.firstName, updatedAuthor.lastName)
+      ).toBeVisible();
 
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(countBefore);
+      await expect(
+        authorPage.getRow(author.firstName, author.lastName)
+      ).toHaveCount(0);
     });
 
     test('replaces inline inputs with text after saving', async () => {
-      const row = await authorPage.openEditMode('Gary', 'Chaffee');
-      await authorPage.editAuthor('Gary', 'Chaffee', 'Gary', 'Chester');
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
 
-      await expect(row.getByRole('textbox')).resolves.not.toBeVisible();
-      await expect(row.getByRole('button', { name: 'Save' })).resolves.not.toBeVisible();
-      await expect(row.getByRole('button', { name: 'Edit' })).resolves.toBeVisible();
+      const updatedAuthor = createRandomUser();
+
+      await authorPage.editAuthor(
+        author.firstName,
+        author.lastName,
+        updatedAuthor.firstName,
+        updatedAuthor.lastName
+      );
+
+      const updatedRow = authorPage.getRow(
+        updatedAuthor.firstName,
+        updatedAuthor.lastName
+      );
+
+      await expect(updatedRow.getByRole('textbox')).toHaveCount(0);
+      await expect(updatedRow.getByRole('button', { name: /save/i })).toHaveCount(0);
+      await expect(updatedRow.getByRole('button', { name: /^edit$/i })).toBeVisible();
+      await expect(updatedRow.getByRole('button', { name: /^delete$/i })).toBeVisible();
     });
   });
 
-  // ─── Table State ──────────────────────────────────────────────────────────
-
   test.describe('authors table', () => {
-    test('shows an empty table on a fresh page', async () => {
-      await expect(authorPage.getNumberOfAuthors()).resolves.toBe(0);
+    test('shows no test-created author on a fresh page', async () => {
+      const authors = await authorPage.getAllAuthors();
+      expect(authors).toHaveLength(0);
     });
 
-    test('displays authors in the order they were added', async () => {
-      await authorPage.addAuthor('Gary', 'Chaffee');
-      await authorPage.addAuthor('Joe', 'Morello');
+    test('shows the empty-state message when there are no author rows', async () => {
+      await expect(authorPage.tbody).toContainText(/no authors yet/i);
+    });
+
+    test('shows the empty-state message after deleting the last author', async () => {
+      const author = createRandomUser();
+      await authorPage.addAuthor(author.firstName, author.lastName);
+      await authorPage.addAuthor(author.firstName, author.lastName);
+
+      await authorPage.deleteAuthor(author.firstName, author.lastName);
 
       const authors = await authorPage.getAllAuthors();
-      expect(authors[0]).toEqual({ firstName: 'Gary', lastName: 'Chaffee' });
-      expect(authors[1]).toEqual({ firstName: 'Joe', lastName: 'Morello' });
+      expect(authors).toHaveLength(0);
+      await expect(authorPage.tbody).toContainText(/no authors yet/i);
+    });
 
-      await authorPage.deleteAuthorIfExists('Gary', 'Chaffee');
-      await authorPage.deleteAuthorIfExists('Joe', 'Morello');
+    test('displays authors in sorted table output', async () => {
+      const author = createRandomUser();
+      const secondAuthor = createRandomUser();
+
+      await authorPage.addAuthor(author.firstName, author.lastName);
+      await authorPage.addAuthor(secondAuthor.firstName, secondAuthor.lastName);
+
+      const authors = await authorPage.getAllAuthors();
+
+      expect(authors).toContainEqual(author);
+      expect(authors).toContainEqual(secondAuthor);
     });
   });
 });

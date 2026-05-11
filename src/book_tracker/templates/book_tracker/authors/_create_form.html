@@ -1,0 +1,18 @@
+<form hx-post="{% url 'author-create' %}"
+      hx-target="#author-table-body"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="row g-2 align-items-start mb-3">
+        <div class="col">
+            {{ form.first_name }}
+            {{ form.first_name.errors }}
+        </div>
+        <div class="col">
+            {{ form.last_name }}
+            {{ form.last_name.errors }}
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Add Author</button>
+        </div>
+    </div>
+</form>

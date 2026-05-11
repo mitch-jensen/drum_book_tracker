@@ -3,92 +3,137 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export class AuthorPage {
     readonly page: Page;
 
-    // Add author form locators
-    readonly addAuthorFirstName: Locator;
-    readonly addAuthorLastName: Locator;
-    readonly addAuthorButton: Locator;
-
-    // Authors table
-    readonly authorsTable: Locator;
+    readonly table: Locator;
+    readonly tbody: Locator;
+    readonly createForm: Locator;
 
     constructor(page: Page) {
         this.page = page;
-        this.addAuthorFirstName = page.getByRole('textbox', { name: 'First name*' });
-        this.addAuthorLastName = page.getByRole('textbox', { name: 'Last name*' });
-        this.addAuthorButton = page.getByRole('button', { name: 'Add Author' })
-        this.authorsTable = page.getByRole('table');
-    }
 
-    async getRowByAuthor(firstName: string, lastName: string): Promise<Locator> {
-        return this.authorsTable
-            .getByRole('row')
-            .filter({ hasText: firstName })
-            .filter({ hasText: lastName });
-    }
+        this.table = page.getByRole('table');
+        this.tbody = this.table.locator('tbody');
 
-    async getNumberOfAuthors(): Promise<number> {
-        return this.authorsTable
-            .getByRole('rowgroup')
-            .last() // first rowgroup is <thead>, second is <tbody>
-            .getByRole('row')
-            .count();
+        // Match your updated template id.
+        this.createForm = page.locator('#author-create-form');
     }
 
     async goto() {
-        await this.page.goto('authors/');
+        await this.page.goto('/authors/');
+        await expect(this.table).toBeVisible();
+        await expect(this.tbody).toBeVisible();
+    }
+
+    getAllRows(): Locator {
+        return this.tbody.getByRole('row').filter({
+            has: this.page.getByRole('button', { name: /^delete$/i }),
+        });
+    }
+
+    getRow(firstName: string, lastName: string): Locator {
+        return this.getAllRows()
+            .filter({
+                has: this.page.getByRole('cell', {
+                    name: firstName,
+                    exact: true,
+                }),
+            })
+            .filter({
+                has: this.page.getByRole('cell', {
+                    name: lastName,
+                    exact: true,
+                }),
+            });
+    }
+
+    async rowExists(firstName: string, lastName: string): Promise<boolean> {
+        return await this.getRow(firstName, lastName).first().isVisible();
+    }
+
+    async rowCount(): Promise<number> {
+        return await this.authorCount();
+    }
+
+    async authorCount(): Promise<number> {
+        return await this.getAllRows().count();
     }
 
     async addAuthor(firstName: string, lastName: string) {
-        await this.addAuthorFirstName.click();
-        await this.addAuthorFirstName.fill(firstName);
-        await this.addAuthorLastName.click();
-        await this.addAuthorLastName.fill(lastName);
-        await this.addAuthorButton.click();
+        await this.createFirstNameInput.fill(firstName);
+        await this.createLastNameInput.fill(lastName);
+        await this.createSubmitButton.click();
 
-        // Verify the new author appears in the table
-        await expect(this.getRowByAuthor(firstName, lastName)).resolves.toBeVisible();
+        await expect(this.getRow(firstName, lastName)).toBeVisible();
+
+        // Verify form is cleared after submission
+        await expect(this.createFirstNameInput).toHaveValue('');
+        await expect(this.createLastNameInput).toHaveValue('');
     }
 
-    async deleteAuthorIfExists(firstName: string, lastName: string): Promise<void> {
-        const row = await this.getRowByAuthor(firstName, lastName);
-        if (await row.isVisible()) {
-            await row.getByRole('button', { name: 'Delete' }).click();
+    async deleteAuthor(firstName: string, lastName: string) {
+        const row = this.getRow(firstName, lastName).first();
+        await expect(row).toBeVisible();
+
+        const initialCount = await this.authorCount();
+
+        await row.getByRole('button', { name: /^delete$/i }).click();
+
+        const confirmButton = this.tbody.getByRole('button', {
+            name: /confirm delete/i,
+        });
+
+        await expect(confirmButton).toBeVisible();
+        await confirmButton.click();
+
+        await expect(this.getRow(firstName, lastName)).toHaveCount(0);
+        await expect(this.getAllRows()).toHaveCount(initialCount - 1);
+    }
+
+    async deleteIfExists(firstName: string, lastName: string) {
+        while ((await this.getRow(firstName, lastName).count()) > 0) {
+            await this.deleteAuthor(firstName, lastName);
         }
     }
 
-    async getAllAuthors(): Promise<{ firstName: string; lastName: string }[]> {
-        const rows = await this.authorsTable
-            .getByRole('rowgroup')
-            .last()
-            .getByRole('row')
-            .all();
+    async deleteAllAuthors() {
+        while ((await this.getAllRows().count()) > 0) {
+            const initialCount = await this.authorCount();
+            const row = this.getAllRows().first();
 
-        return Promise.all(
-            rows.map(async (row) => {
-                const cells = row.getByRole('cell');
-                return {
-                    firstName: (await cells.nth(0).innerText()).trim(),
-                    lastName: (await cells.nth(1).innerText()).trim(),
-                };
-            })
-        );
+            await expect(row).toBeVisible();
+            await row.getByRole('button', { name: /^delete$/i }).click();
+
+            const confirmButton = this.tbody.getByRole('button', {
+                name: /confirm delete/i,
+            });
+
+            await expect(confirmButton).toBeVisible();
+            await confirmButton.click();
+
+            await expect(this.getAllRows()).toHaveCount(initialCount - 1);
+        }
+
+        await expect(this.getAllRows()).toHaveCount(0);
+        await expect(this.tbody).toContainText(/no authors yet/i);
     }
 
-    async deleteAllAuthors(): Promise<void> {
-        const authors = await this.getAllAuthors();
-        await Promise.all(
-            authors.map(async (author) => {
-                await this.deleteAuthorIfExists(author.firstName, author.lastName);
-            })
-        );
-    }
+    async openEdit(firstName: string, lastName: string): Promise<Locator> {
+        const displayRow = this.getRow(firstName, lastName).first();
+        await expect(displayRow).toBeVisible();
 
-    async openEditMode(firstName: string, lastName: string): Promise<Locator> {
-        const row = await this.getRowByAuthor(firstName, lastName);
-        await row.getByRole('button', { name: 'Edit' }).click();
-        // Wait for the inline inputs to appear before returning
-        await expect(row.getByRole('textbox').nth(0)).toBeVisible();
-        return row;
+        const rowId = await displayRow.getAttribute('id');
+
+        if (rowId === null) {
+            throw new Error(`Author row for ${firstName} ${lastName} does not have an id`);
+        }
+
+        await displayRow.getByRole('button', { name: /^edit$/i }).click();
+
+        const editRow = this.tbody.locator(`tr[id="${rowId}"]`);
+        const inputs = editRow.getByRole('textbox');
+
+        await expect(inputs.first()).toBeVisible();
+
+        return editRow;
     }
 
     async editAuthor(
@@ -97,16 +142,45 @@ export class AuthorPage {
         newFirstName: string,
         newLastName: string
     ) {
-        const row = await this.openEditMode(currentFirstName, currentLastName);
+        const row = await this.openEdit(currentFirstName, currentLastName);
 
         const inputs = row.getByRole('textbox');
-        await inputs.nth(0).clear();
+
         await inputs.nth(0).fill(newFirstName);
-        await inputs.nth(1).clear();
         await inputs.nth(1).fill(newLastName);
 
-        await row.getByRole('button', { name: 'Save' }).click();
+        await row.getByRole('button', { name: /^save$/i }).click();
 
-        await expect(this.getRowByAuthor(newFirstName, newLastName)).resolves.toBeVisible();
+        await expect(this.getRow(newFirstName, newLastName)).toHaveCount(1);
+        await expect(this.getRow(newFirstName, newLastName)).toBeVisible();
+    }
+
+    async getAllAuthors(): Promise<{ firstName: string; lastName: string }[]> {
+        const rows = await this.getAllRows().all();
+
+        const result: { firstName: string; lastName: string }[] = [];
+
+        for (const row of rows) {
+            const cells = row.getByRole('cell');
+
+            result.push({
+                firstName: (await cells.nth(0).textContent())?.trim() ?? '',
+                lastName: (await cells.nth(1).textContent())?.trim() ?? '',
+            });
+        }
+
+        return result;
+    }
+
+    get createFirstNameInput() {
+        return this.createForm.getByRole('textbox').nth(0);
+    }
+
+    get createLastNameInput() {
+        return this.createForm.getByRole('textbox').nth(1);
+    }
+
+    get createSubmitButton() {
+        return this.createForm.getByRole('button', { name: /add/i });
     }
 }

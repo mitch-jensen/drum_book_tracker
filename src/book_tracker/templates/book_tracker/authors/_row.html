@@ -1,10 +1,16 @@
-<tr id="author-{{ author.id }}">
+<tr id="author-{{ author.pk }}">
     <td>{{ author.first_name }}</td>
     <td>{{ author.last_name }}</td>
     <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary"
-                hx-get="{% url 'author-edit' author.id %}"
-                hx-target="#author-{{ author.id }}"
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'author-edit' author.pk %}"
+                hx-target="#author-{{ author.pk }}"
                 hx-swap="outerHTML">Edit</button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-get="{% url 'author-confirm-delete' author.pk %}"
+                hx-target="#author-{{ author.pk }}"
+                hx-swap="outerHTML">Delete</button>
     </td>
 </tr>

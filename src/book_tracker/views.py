@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING, NamedTuple, TypedDict, TypeGuard
 
-from django.db.models import Avg, Count, Max, Min, Q
+from django.db.models import Avg, Count, IntegerField, Max, Min, Q
+from django.db.models.functions import Cast
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from book_tracker.forms import (
     AuthorForm,
@@ -19,9 +21,11 @@ from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Ta
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
-    from django.http import HttpResponse, QueryDict
+    from django.http import QueryDict
 
     from core.htmx import HtmxHttpRequest
+
+require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
 
 
 class PageRange(NamedTuple):
@@ -67,44 +71,67 @@ def _is_page_range_parse_success(result: PageRangeParseResultDict) -> TypeGuard[
 # --- Author views ---
 
 
+def get_authors():
+    return Author.objects.order_by("last_name", "first_name")
+
+
 @require_GET
 def author_list(request: HtmxHttpRequest) -> HttpResponse:
-    authors = Author.objects.order_by("last_name", "first_name")
-    form = AuthorForm()
-    return render(request, "book_tracker/authors/list.html", {"authors": authors, "form": form})
+    return render(
+        request,
+        "book_tracker/authors/list.html",
+        {
+            "authors": get_authors(),
+            "form": AuthorForm(),
+        },
+    )
+
+
+@require_GET
+@require_htmx
+def author_table_body(request: HtmxHttpRequest) -> HttpResponse:
+    return render(
+        request,
+        "book_tracker/authors/_table_body.html",
+        {"authors": get_authors()},
+    )
+
+
+def author_row(request: HtmxHttpRequest, pk: int) -> HttpResponse:
+    author = get_object_or_404(Author, pk=pk)
+    return render(request, "book_tracker/authors/_row.html", {"author": author})
 
 
 @require_POST
 @require_htmx
 def author_create(request: HtmxHttpRequest) -> HttpResponse:
     form = AuthorForm(request.POST)
+
     if form.is_valid():
         form.save()
-        authors = Author.objects.order_by("last_name", "first_name")
-        response = render(
+
+        return render(
             request,
-            "book_tracker/authors/_list.html",
-            {"authors": authors, "form": AuthorForm()},
+            "book_tracker/authors/_create_success.html",
+            {
+                "authors": get_authors(),
+                "form": AuthorForm(),
+            },
         )
-        response["HX-Retarget"] = "#author-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-    return render(request, "book_tracker/authors/_form.html", {"form": form})
+
+    return render(
+        request,
+        "book_tracker/authors/_create_form.html",
+        {"form": form},
+        status=400,
+    )
 
 
-@require_GET
-@require_htmx
-def author_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    author = get_object_or_404(Author, pk=pk)
-    return render(request, "book_tracker/authors/_row.html", {"author": author})
-
-
-@require_GET
-@require_htmx
 def author_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     author = get_object_or_404(Author, pk=pk)
     form = AuthorForm(instance=author)
-    return render(request, "book_tracker/authors/_edit_row.html", {"author": author, "form": form})
+
+    return render(request, "book_tracker/authors/_row_form.html", {"author": author, "form": form})
 
 
 @require_POST
@@ -112,10 +139,48 @@ def author_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 def author_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     author = get_object_or_404(Author, pk=pk)
     form = AuthorForm(request.POST, instance=author)
+
     if form.is_valid():
         form.save()
-        return render(request, "book_tracker/authors/_row.html", {"author": author})
-    return render(request, "book_tracker/authors/_edit_row.html", {"author": author, "form": form})
+        return render(
+            request,
+            "book_tracker/authors/_table_body.html",
+            {"authors": get_authors()},
+        )
+
+    return render(
+        request,
+        "book_tracker/authors/_row_form.html",
+        {
+            "author": author,
+            "form": form,
+        },
+        status=400,
+    )
+
+
+@require_GET
+@require_htmx
+def author_confirm_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    author = get_object_or_404(Author, pk=pk)
+    return render(
+        request,
+        "book_tracker/authors/_row_confirm_delete.html",
+        {"author": author},
+    )
+
+
+@require_DELETE
+@require_htmx
+def author_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    author = get_object_or_404(Author, pk=pk)
+    author.delete()
+
+    return render(
+        request,
+        "book_tracker/authors/_table_body.html",
+        {"authors": get_authors()},
+    )
 
 
 # --- Tag views ---
@@ -289,15 +354,26 @@ def section_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 def exercise_list(request: HtmxHttpRequest) -> HttpResponse:
     filter_form = ExerciseTagFilterForm(request.GET or None)
 
-    exercises = (
-        Exercise.objects.select_related("section__book")
-        .prefetch_related("tags")
-        .order_by(
+    exercises_qs = Exercise.objects.select_related("section__book").prefetch_related("tags")
+    # Smart sort: numeric if all identifiers are numeric, else lexicographic
+    identifiers = exercises_qs.values_list("identifier", flat=True)
+
+    def _is_numeric(s: str) -> bool:
+        return s.isdigit()
+
+    all_numeric = all(_is_numeric(i) for i in identifiers if i)
+    if all_numeric:
+        exercises = exercises_qs.order_by(
+            "section__book__title",
+            "section__order",
+            Cast("identifier", IntegerField()),
+        )
+    else:
+        exercises = exercises_qs.order_by(
             "section__book__title",
             "section__order",
             "identifier",
         )
-    )
 
     if filter_form.is_valid() and filter_form.cleaned_data["tags"]:
         exercises = exercises.filter(tags__in=filter_form.cleaned_data["tags"]).distinct()
@@ -316,15 +392,25 @@ def exercise_create(request: HtmxHttpRequest) -> HttpResponse:
     form = ExerciseForm(request.POST)
     if form.is_valid():
         form.save()
-        exercises = (
-            Exercise.objects.select_related("section__book")
-            .prefetch_related("tags")
-            .order_by(
+        exercises_qs = Exercise.objects.select_related("section__book").prefetch_related("tags")
+        identifiers = exercises_qs.values_list("identifier", flat=True)
+
+        def _is_numeric(s: str) -> bool:
+            return s.isdigit()
+
+        all_numeric = all(_is_numeric(i) for i in identifiers if i)
+        if all_numeric:
+            exercises = exercises_qs.order_by(
+                "section__book__title",
+                "section__order",
+                Cast("identifier", IntegerField()),
+            )
+        else:
+            exercises = exercises_qs.order_by(
                 "section__book__title",
                 "section__order",
                 "identifier",
             )
-        )
         response = render(
             request,
             "book_tracker/exercises/_list.html",
@@ -696,3 +782,19 @@ def practice_log_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
             "current_section_id": current_section_id,
         },
     )
+
+
+@require_POST
+@require_htmx
+def exercise_quick_log(request: HtmxHttpRequest, pk: str) -> HttpResponse:
+    exercise = get_object_or_404(Exercise.objects.select_related("section__book"), pk=pk)
+    # Prepopulate the form with the current exercise, section, and book
+    data = request.POST.copy()
+    data["exercise"] = str(exercise.pk)
+    data["section"] = str(exercise.section.pk)
+    data["book"] = str(exercise.section.book.pk)
+    form = PracticeLogForm(data)
+    if form.is_valid():
+        form.save()
+        return render(request, "book_tracker/logs/_form.html", {"form": PracticeLogForm()})
+    return render(request, "book_tracker/logs/_form.html", {"form": form})

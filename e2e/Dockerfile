@@ -16,5 +16,3 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 COPY --chown=pwuser:pwuser . .
 
 USER pwuser
-
-CMD ["sleep", "infinity" ]

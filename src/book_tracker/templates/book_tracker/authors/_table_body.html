@@ -1,0 +1,9 @@
+{% if authors %}
+    {% for author in authors %}
+        {% include "book_tracker/authors/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-authors-row">
+        <td colspan="3" class="text-center text-muted py-4">No Authors Yet</td>
+    </tr>
+{% endif %}
