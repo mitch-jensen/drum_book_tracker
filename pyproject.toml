@@ -76,3 +76,6 @@ infer-with-first-use = false
 
 [tool.djlint]
 profile = "django"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings_local"

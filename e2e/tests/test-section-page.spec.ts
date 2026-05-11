@@ -77,13 +77,26 @@ test.describe('Sections page', () => {
     await expect(sectionPage.getRow(section)).toBeVisible();
   });
 
+  test('adds multiple sections for one book and shows them in the table', async () => {
+    const section = createSection(book.title);
+    const secondSection = createSection(book.title);
+
+    await sectionPage.addSections([section, secondSection]);
+
+    await expect(sectionPage.getRow(section)).toBeVisible();
+    await expect(sectionPage.getRow(secondSection)).toBeVisible();
+  });
+
   test('does not create a section if title is missing', async () => {
     const section = createSection(book.title);
 
+    await sectionPage.gotoBulkCreate();
     await sectionPage.createBookSelect.selectOption({ label: section.bookTitle });
     await sectionPage.createOrderInput.fill(section.order);
     await sectionPage.createSubmitButton.click();
 
+    await expect(sectionPage.createForm).toBeVisible();
+    await sectionPage.goto();
     await expect(sectionPage.getRowsByTitlePrefix(SECTION_TITLE_PREFIX)).toHaveCount(0);
   });
 

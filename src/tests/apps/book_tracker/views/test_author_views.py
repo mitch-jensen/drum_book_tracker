@@ -85,7 +85,7 @@ class TestAuthorCreate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert not Author.objects.exists()
         assert b"This field is required." in response.content
 
@@ -96,7 +96,7 @@ class TestAuthorCreate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert not Author.objects.exists()
 
     def test_rejects_non_htmx_request(self, client: Client) -> None:
@@ -182,7 +182,7 @@ class TestAuthorUpdate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         author.refresh_from_db()
         assert author.first_name == "George"  # unchanged
         assert b"This field is required." in response.content

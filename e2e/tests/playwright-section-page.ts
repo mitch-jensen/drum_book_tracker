@@ -17,13 +17,18 @@ export class SectionPage {
         this.page = page;
         this.table = page.getByRole('table');
         this.tbody = this.table.locator('tbody');
-        this.createForm = page.locator('#section-create-form');
+        this.createForm = page.locator('#section-bulk-create-form');
     }
 
     async goto() {
         await this.page.goto('/sections/');
         await expect(this.table).toBeVisible();
         await expect(this.tbody).toBeVisible();
+    }
+
+    async gotoBulkCreate() {
+        await this.page.goto('/sections/bulk-create/');
+        await expect(this.createForm).toBeVisible();
     }
 
     getAllRows(): Locator {
@@ -63,14 +68,32 @@ export class SectionPage {
     }
 
     async addSection(section: Section) {
-        await this.createBookSelect.selectOption({ label: section.bookTitle });
-        await this.createTitleInput.fill(section.title);
-        await this.createOrderInput.fill(section.order);
+        await this.addSections([section]);
+    }
+
+    async addSections(sections: Section[]) {
+        if (sections.length === 0) {
+            throw new Error('At least one section is required');
+        }
+
+        await this.gotoBulkCreate();
+        await this.createBookSelect.selectOption({ label: sections[0].bookTitle });
+
+        for (const [index, section] of sections.entries()) {
+            if (index > 0) {
+                await this.addRowButton.click();
+            }
+
+            await this.createTitleInputs.nth(index).fill(section.title);
+            await this.createOrderInputs.nth(index).fill(section.order);
+        }
+
         await this.createSubmitButton.click();
 
-        await expect(this.getRow(section).first()).toBeVisible();
-        await expect(this.createTitleInput).toHaveValue('');
-        await expect(this.createOrderInput).toHaveValue('');
+        await expect(this.table).toBeVisible();
+        for (const section of sections) {
+            await expect(this.getRow(section).first()).toBeVisible();
+        }
     }
 
     async deleteSection(section: Section) {
@@ -143,15 +166,27 @@ export class SectionPage {
     }
 
     get createTitleInput() {
-        return this.createForm.getByRole('textbox').nth(0);
+        return this.createTitleInputs.nth(0);
     }
 
     get createOrderInput() {
-        return this.createForm.getByRole('spinbutton').nth(0);
+        return this.createOrderInputs.nth(0);
+    }
+
+    get createTitleInputs() {
+        return this.createForm.locator('input[name="section_title"]');
+    }
+
+    get createOrderInputs() {
+        return this.createForm.locator('input[name="section_order"]');
     }
 
     get createSubmitButton() {
-        return this.createForm.getByRole('button', { name: /add/i });
+        return this.createForm.getByRole('button', { name: /create sections/i });
+    }
+
+    get addRowButton() {
+        return this.createForm.getByRole('button', { name: /add section/i });
     }
 
     get confirmDeleteButton() {

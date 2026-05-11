@@ -89,6 +89,13 @@ class SectionForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
         self.apply_bootstrap_field_classes()
 
 
+class BulkSectionCreateForm(forms.Form):
+    book = forms.ModelChoiceField(
+        queryset=Book.objects.order_by("title"),
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+
 class ExerciseForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Exercise

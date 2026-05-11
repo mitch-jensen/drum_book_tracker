@@ -54,7 +54,7 @@ class TestExerciseCrudViews:
         assert success["HX-Retarget"] == "#exercise-list-container"
         assert success["HX-Reswap"] == "innerHTML"
         assert Exercise.objects.filter(section=section, identifier="7").exists()
-        assert error.status_code == HTTPStatus.OK
+        assert error.status_code == HTTPStatus.BAD_REQUEST
         assert b"This field is required." in error.content
 
     def test_row_edit_and_update_paths(self, client: Client) -> None:
@@ -88,7 +88,7 @@ class TestExerciseCrudViews:
         assert edit_response.status_code == HTTPStatus.OK
         assert update_success.status_code == HTTPStatus.OK
         assert exercise.identifier == "2"
-        assert update_error.status_code == HTTPStatus.OK
+        assert update_error.status_code == HTTPStatus.BAD_REQUEST
         assert b'name="identifier"' in update_error.content
         assert b'name="description"' in update_error.content
 

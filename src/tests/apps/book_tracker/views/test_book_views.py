@@ -94,7 +94,7 @@ class TestBookCreate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert not Book.objects.exists()
         assert b"This field is required." in response.content
 
@@ -107,7 +107,7 @@ class TestBookCreate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert not Book.objects.exists()
 
     def test_validation_error_missing_authors(self, client: Client) -> None:
@@ -117,7 +117,7 @@ class TestBookCreate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert not Book.objects.exists()
 
     def test_rejects_non_htmx_request(self, client: Client) -> None:
@@ -212,7 +212,7 @@ class TestBookUpdate:
             **HTMX_HEADERS,
         )
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         book.refresh_from_db()
         assert book.title == "Stick Control"  # unchanged
         assert b"This field is required." in response.content

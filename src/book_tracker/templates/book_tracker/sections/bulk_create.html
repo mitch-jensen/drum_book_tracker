@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}
+    Bulk Create Sections | {{ block.super }}
+{% endblock title %}
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'section-list' %}">Sections</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Bulk Create</li>
+        </ol>
+    </nav>
+    <h1 class="mb-4">Bulk Create Sections</h1>
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+        </div>
+    {% endif %}
+    {% if section_row_errors %}
+        <div class="alert alert-danger">
+            {% for error in section_row_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+        </div>
+    {% endif %}
+    <form id="section-bulk-create-form" method="post">
+        {% csrf_token %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="{{ form.book.id_for_label }}" class="form-label">Book</label>
+                {{ form.book }}
+                {% if form.book.errors %}<div class="invalid-feedback d-block">{{ form.book.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+        <h5 class="mt-4">Sections</h5>
+        <p class="text-muted small">Create all sections for the selected book in display order.</p>
+        <div id="section-rows">
+            {% for section_title, section_order in section_rows %}
+                {% include "book_tracker/sections/_section_form_row.html" %}
+            {% endfor %}
+        </div>
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm mt-2"
+                hx-get="{% url 'section-form-row' %}"
+                hx-target="#section-rows"
+                hx-swap="beforeend">+ Add Section</button>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Create Sections</button>
+            <a href="{% url 'section-list' %}"
+               class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+{% endblock content %}

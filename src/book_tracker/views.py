@@ -5,6 +5,7 @@ from django.db.models.functions import Cast
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from book_tracker.bulk_forms import build_form_rows
 from book_tracker.forms import (
     AuthorForm,
     BookForm,
@@ -96,6 +97,8 @@ def author_table_body(request: HtmxHttpRequest) -> HttpResponse:
     )
 
 
+@require_GET
+@require_htmx
 def author_row(request: HtmxHttpRequest, pk: int) -> HttpResponse:
     author = get_object_or_404(Author, pk=pk)
     return render(request, "book_tracker/authors/_row.html", {"author": author})
@@ -634,12 +637,12 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
                 return redirect("exercise-list")
 
         # Re-render with errors - preserve page range rows from POST data
-        range_starts = request.POST.getlist("range_start")
-        range_ends = request.POST.getlist("range_end")
-        range_pages = request.POST.getlist("range_page")
-        page_ranges = [PageRangeFormRow(range_start=rs, range_end=re_, range_page=rp) for rs, re_, rp in zip(range_starts, range_ends, range_pages, strict=False)]
-        if not page_ranges:
-            page_ranges = [PageRangeFormRow(range_start="", range_end="", range_page="")]
+        page_ranges = build_form_rows(
+            request.POST,
+            ("range_start", "range_end", "range_page"),
+            PageRangeFormRow,
+            PageRangeFormRow(range_start="", range_end="", range_page=""),
+        )
 
         return render(
             request,

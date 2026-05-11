@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import functools
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from django.db.models import IntegerField, QuerySet
 from django.db.models.functions import Cast
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from book_tracker.bulk_forms import build_form_rows
 from book_tracker.forms import (
     BookForm,
+    BulkSectionCreateForm,
     ExerciseForm,
     ExerciseTagFilterForm,
     PracticeLogForm,
@@ -24,6 +28,11 @@ if TYPE_CHECKING:
     from core.htmx import HtmxHttpRequest
 
 require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
+
+
+class SectionFormRow(NamedTuple):
+    section_title: str
+    section_order: str
 
 
 def require_htmx(view_func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
@@ -257,33 +266,6 @@ def section_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return render(request, "book_tracker/sections/_row.html", {"section": section})
 
 
-@require_POST
-@require_htmx
-def section_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = SectionForm(request.POST)
-
-    if form.is_valid():
-        form.save()
-        response = render(
-            request,
-            "book_tracker/sections/_list.html",
-            {
-                "sections": get_sections(),
-                "form": SectionForm(),
-            },
-        )
-        response["HX-Retarget"] = "#section-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-
-    return render(
-        request,
-        "book_tracker/sections/_create_form.html",
-        {"form": form},
-        status=HTTPStatus.BAD_REQUEST,
-    )
-
-
 @require_GET
 @require_htmx
 def section_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
@@ -330,6 +312,108 @@ def section_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
         request,
         "book_tracker/sections/_table_body.html",
         {"sections": get_sections()},
+    )
+
+
+def _section_form_rows_from_post(request: HtmxHttpRequest) -> list[SectionFormRow]:
+    return build_form_rows(
+        request.POST,
+        ("section_title", "section_order"),
+        SectionFormRow,
+        SectionFormRow(section_title="", section_order=""),
+    )
+
+
+def _validate_section_form_rows(book: Book, rows: list[SectionFormRow]) -> tuple[list[tuple[str, int]], list[str]]:
+    parsed_rows: list[tuple[str, int]] = []
+    errors: list[str] = []
+    submitted_orders: list[int] = []
+
+    for row_index, row in enumerate(rows, 1):
+        title = row.section_title.strip()
+        raw_order = row.section_order.strip()
+
+        if not title or not raw_order:
+            errors.append(f"Section row {row_index}: all fields are required.")
+            continue
+
+        try:
+            order = int(raw_order)
+        except ValueError:
+            errors.append(f"Section row {row_index}: order must be an integer.")
+            continue
+
+        if order < 1:
+            errors.append(f"Section row {row_index}: order must be positive.")
+            continue
+
+        submitted_orders.append(order)
+        parsed_rows.append((title, order))
+
+    duplicate_orders = sorted({order for order in submitted_orders if submitted_orders.count(order) > 1})
+    if duplicate_orders:
+        errors.append(f"Duplicate section orders submitted: {', '.join(str(order) for order in duplicate_orders)}.")
+
+    existing_orders = set(
+        Section.objects.filter(book=book, order__in=submitted_orders).values_list("order", flat=True),
+    )
+    if existing_orders:
+        errors.append(
+            f"Sections with these orders already exist for {book.title}: {', '.join(str(order) for order in sorted(existing_orders))}.",
+        )
+
+    return parsed_rows, errors
+
+
+def _render_section_bulk_create(
+    request: HtmxHttpRequest,
+    form: BulkSectionCreateForm,
+    section_rows: list[SectionFormRow],
+    section_row_errors: list[str] | None = None,
+) -> HttpResponse:
+    return render(
+        request,
+        "book_tracker/sections/bulk_create.html",
+        {
+            "form": form,
+            "section_rows": section_rows,
+            "section_row_errors": section_row_errors or [],
+        },
+    )
+
+
+def section_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = BulkSectionCreateForm(request.POST)
+        section_rows = _section_form_rows_from_post(request)
+        section_row_errors: list[str] = []
+
+        if form.is_valid():
+            book = form.cleaned_data["book"]
+            parsed_rows, section_row_errors = _validate_section_form_rows(book, section_rows)
+
+            if not section_row_errors:
+                Section.objects.bulk_create(
+                    [Section(book=book, title=title, order=order) for title, order in parsed_rows],
+                )
+                return redirect("section-list")
+
+        return _render_section_bulk_create(request, form, section_rows, section_row_errors)
+
+    return _render_section_bulk_create(
+        request,
+        BulkSectionCreateForm(),
+        [SectionFormRow(section_title="", section_order="")],
+    )
+
+
+@require_GET
+@require_htmx
+def section_form_row(request: HtmxHttpRequest) -> HttpResponse:
+    return render(
+        request,
+        "book_tracker/sections/_section_form_row.html",
+        {"section_title": "", "section_order": ""},
     )
 
 

@@ -59,8 +59,8 @@ def test_author_create_validation_error_uses_authors_form_partial(client: Client
         **HTMX_HEADERS,
     )
 
-    assert response.status_code == HTTPStatus.OK
-    assert "book_tracker/authors/_form.html" in _template_names(response)
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert "book_tracker/authors/_create_form.html" in _template_names(response)
 
 
 def test_book_row_uses_books_row_partial(client: Client, book: Book) -> None:
