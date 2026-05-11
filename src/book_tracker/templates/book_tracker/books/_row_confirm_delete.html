@@ -1,0 +1,21 @@
+<tr id="book-{{ book.pk }}" class="table-warning">
+    <td colspan="4">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>
+                Delete <strong>{{ book.title }}</strong>?
+            </span>
+            <div class="d-flex gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-secondary"
+                        hx-get="{% url 'book-row' book.pk %}"
+                        hx-target="#book-{{ book.pk }}"
+                        hx-swap="outerHTML">Cancel</button>
+                <button type="button"
+                        class="btn btn-sm btn-danger"
+                        hx-delete="{% url 'book-delete' book.pk %}"
+                        hx-target="#book-table-body"
+                        hx-swap="innerHTML">Confirm Delete</button>
+            </div>
+        </div>
+    </td>
+</tr>

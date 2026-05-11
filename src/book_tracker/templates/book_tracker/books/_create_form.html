@@ -1,0 +1,23 @@
+<form hx-post="{% url 'book-create' %}"
+      hx-target="#book-create-form"
+      hx-swap="innerHTML"
+      hx-disabled-elt="find button[type='submit']">
+    {% csrf_token %}
+    <div class="row g-2 align-items-start mb-3">
+        <div class="col">
+            {{ form.title }}
+            {{ form.title.errors }}
+        </div>
+        <div class="col">
+            {{ form.page_count }}
+            {{ form.page_count.errors }}
+        </div>
+        <div class="col">
+            {{ form.authors }}
+            {{ form.authors.errors }}
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Add Book</button>
+        </div>
+    </div>
+</form>

@@ -1,9 +1,15 @@
-<tr id="tag-{{ tag.id }}">
+<tr id="tag-{{ tag.pk }}">
     <td>{{ tag.name }}</td>
     <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary"
-                hx-get="{% url 'tag-edit' tag.id %}"
-                hx-target="#tag-{{ tag.id }}"
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'tag-edit' tag.pk %}"
+                hx-target="#tag-{{ tag.pk }}"
                 hx-swap="outerHTML">Edit</button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-get="{% url 'tag-confirm-delete' tag.pk %}"
+                hx-target="#tag-{{ tag.pk }}"
+                hx-swap="outerHTML">Delete</button>
     </td>
 </tr>

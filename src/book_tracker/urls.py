@@ -1,6 +1,6 @@
 from django.urls import path
 
-from book_tracker import views
+from book_tracker import htmx_crud_views, views
 
 urlpatterns = [
     path("authors/", views.author_list, name="author-list"),
@@ -11,16 +11,20 @@ urlpatterns = [
     path("authors/<str:pk>/update/", views.author_update, name="author-update"),
     path("authors/<str:pk>/delete/", views.author_delete, name="author-delete"),
     path("authors/<str:pk>/delete/confirm/", views.author_confirm_delete, name="author-confirm-delete"),
-    path("tags/", views.tag_list, name="tag-list"),
-    path("tags/create/", views.tag_create, name="tag-create"),
-    path("tags/<str:pk>/", views.tag_row, name="tag-row"),
-    path("tags/<str:pk>/edit/", views.tag_edit, name="tag-edit"),
-    path("tags/<str:pk>/update/", views.tag_update, name="tag-update"),
-    path("books/", views.book_list, name="book-list"),
-    path("books/create/", views.book_create, name="book-create"),
-    path("books/<str:pk>/", views.book_row, name="book-row"),
-    path("books/<str:pk>/edit/", views.book_edit, name="book-edit"),
-    path("books/<str:pk>/update/", views.book_update, name="book-update"),
+    path("tags/", htmx_crud_views.tag_list, name="tag-list"),
+    path("tags/create/", htmx_crud_views.tag_create, name="tag-create"),
+    path("tags/<str:pk>/", htmx_crud_views.tag_row, name="tag-row"),
+    path("tags/<str:pk>/edit/", htmx_crud_views.tag_edit, name="tag-edit"),
+    path("tags/<str:pk>/update/", htmx_crud_views.tag_update, name="tag-update"),
+    path("tags/<str:pk>/delete/", htmx_crud_views.tag_delete, name="tag-delete"),
+    path("tags/<str:pk>/delete/confirm/", htmx_crud_views.tag_confirm_delete, name="tag-confirm-delete"),
+    path("books/", htmx_crud_views.book_list, name="book-list"),
+    path("books/create/", htmx_crud_views.book_create, name="book-create"),
+    path("books/<str:pk>/", htmx_crud_views.book_row, name="book-row"),
+    path("books/<str:pk>/edit/", htmx_crud_views.book_edit, name="book-edit"),
+    path("books/<str:pk>/update/", htmx_crud_views.book_update, name="book-update"),
+    path("books/<str:pk>/delete/", htmx_crud_views.book_delete, name="book-delete"),
+    path("books/<str:pk>/delete/confirm/", htmx_crud_views.book_confirm_delete, name="book-confirm-delete"),
     path("sections/", views.section_list, name="section-list"),
     path("sections/create/", views.section_create, name="section-create"),
     path("sections/<str:pk>/", views.section_row, name="section-row"),

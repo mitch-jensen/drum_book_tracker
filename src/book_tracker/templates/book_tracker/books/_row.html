@@ -1,11 +1,22 @@
-<tr id="book-{{ book.id }}">
+<tr id="book-{{ book.pk }}">
     <td>{{ book.title }}</td>
     <td>{{ book.page_count }}</td>
-    <td>{{ book.authors.all|join:", " }}</td>
+    <td>
+        {% for author in book.authors.all %}
+            {{ author }}
+            {% if not forloop.last %},{% endif %}
+        {% endfor %}
+    </td>
     <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary"
-                hx-get="{% url 'book-edit' book.id %}"
-                hx-target="#book-{{ book.id }}"
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                hx-get="{% url 'book-edit' book.pk %}"
+                hx-target="#book-{{ book.pk }}"
                 hx-swap="outerHTML">Edit</button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-get="{% url 'book-confirm-delete' book.pk %}"
+                hx-target="#book-{{ book.pk }}"
+                hx-swap="outerHTML">Delete</button>
     </td>
 </tr>

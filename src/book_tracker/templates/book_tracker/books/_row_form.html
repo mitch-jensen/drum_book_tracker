@@ -1,0 +1,32 @@
+<tr id="book-{{ book.pk }}">
+    <td colspan="4">
+        <form hx-post="{% url 'book-update' book.pk %}"
+              hx-target="#book-table-body"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% csrf_token %}
+            <div class="row g-2 align-items-start">
+                <div class="col">
+                    {{ form.title }}
+                    {{ form.title.errors }}
+                </div>
+                <div class="col">
+                    {{ form.page_count }}
+                    {{ form.page_count.errors }}
+                </div>
+                <div class="col">
+                    {{ form.authors }}
+                    {{ form.authors.errors }}
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-get="{% url 'book-row' book.pk %}"
+                            hx-target="#book-{{ book.pk }}"
+                            hx-swap="outerHTML">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </td>
+</tr>
