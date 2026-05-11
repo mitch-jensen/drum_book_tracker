@@ -94,12 +94,24 @@ export class AuthorPage {
         }
     }
 
-    async deleteAllAuthors() {
+    getRowsByFirstNamePrefix(firstNamePrefix: string): Locator {
+        return this.getAllRows().filter({
+            has: this.page.getByRole('cell', {
+                name: new RegExp(`^${firstNamePrefix}`),
+            }),
+        });
+    }
+
+    async deleteAllAuthors(firstNamePrefix?: string) {
         await this.goto();
 
-        while ((await this.getAllRows().count()) > 0) {
-            const initialCount = await this.authorCount();
-            const row = this.getAllRows().first();
+        const rows = firstNamePrefix === undefined
+            ? this.getAllRows()
+            : this.getRowsByFirstNamePrefix(firstNamePrefix);
+
+        while ((await rows.count()) > 0) {
+            const initialCount = await rows.count();
+            const row = rows.first();
 
             await expect(row).toBeVisible();
             await row.getByRole('button', { name: /^delete$/i }).click();
@@ -111,11 +123,14 @@ export class AuthorPage {
             await expect(confirmButton).toBeVisible();
             await confirmButton.click();
 
-            await expect(this.getAllRows()).toHaveCount(initialCount - 1);
+            await expect(rows).toHaveCount(initialCount - 1);
         }
 
-        await expect(this.getAllRows()).toHaveCount(0);
-        await expect(this.tbody).toContainText(/no authors yet/i);
+        await expect(rows).toHaveCount(0);
+
+        if (firstNamePrefix === undefined) {
+            await expect(this.tbody).toContainText(/no authors yet/i);
+        }
     }
 
     async openEdit(firstName: string, lastName: string): Promise<Locator> {

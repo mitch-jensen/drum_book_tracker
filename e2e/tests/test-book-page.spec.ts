@@ -8,12 +8,13 @@ type Author = {
 };
 
 let bookSequence = 0;
+const BOOK_AUTHOR_FIRST_NAME_PREFIX = 'E2EBookAuthorFirst';
 
 function createAuthor(): Author {
   bookSequence += 1;
 
   return {
-    firstName: `E2EBookAuthorFirst${bookSequence}`,
+    firstName: `${BOOK_AUTHOR_FIRST_NAME_PREFIX}${bookSequence}`,
     lastName: `E2EBookAuthorLast${bookSequence}`,
   };
 }
@@ -39,8 +40,11 @@ test.describe('Books page', () => {
     bookPage = new BookPage(page);
     author = createAuthor();
 
+    await bookPage.goto();
+    await bookPage.deleteAllBooks();
+
     await authorPage.goto();
-    await authorPage.deleteAllAuthors();
+    await authorPage.deleteAllAuthors(BOOK_AUTHOR_FIRST_NAME_PREFIX);
     await authorPage.addAuthor(author.firstName, author.lastName);
 
     await bookPage.goto();
@@ -48,7 +52,7 @@ test.describe('Books page', () => {
 
   test.afterEach(async () => {
     await bookPage.deleteAllBooks();
-    await authorPage.deleteAllAuthors();
+    await authorPage.deleteAllAuthors(BOOK_AUTHOR_FIRST_NAME_PREFIX);
   });
 
   test.describe('adding a book', () => {

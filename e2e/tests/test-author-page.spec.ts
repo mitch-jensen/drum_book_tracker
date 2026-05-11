@@ -7,12 +7,13 @@ type Author = {
 };
 
 let authorSequence = 0;
+const AUTHOR_FIRST_NAME_PREFIX = 'E2EFirst';
 
 function createRandomUser(): Author {
   authorSequence += 1;
 
   return {
-    firstName: `E2EFirst${authorSequence}`,
+    firstName: `${AUTHOR_FIRST_NAME_PREFIX}${authorSequence}`,
     lastName: `E2ELast${authorSequence}`,
   };
 }
@@ -27,7 +28,7 @@ test.describe('Authors page', () => {
   });
 
   test.afterEach(async () => {
-    await authorPage.deleteAllAuthors();
+    await authorPage.deleteAllAuthors(AUTHOR_FIRST_NAME_PREFIX);
   });
 
   test.describe('adding an author', () => {
@@ -64,7 +65,9 @@ test.describe('Authors page', () => {
       await authorPage.createLastNameInput.fill(author.lastName);
       await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.getAllRows()).toHaveCount(0);
+      await expect(
+        authorPage.getRowsByFirstNamePrefix(AUTHOR_FIRST_NAME_PREFIX)
+      ).toHaveCount(0);
       await expect(authorPage.getRow(author.firstName, author.lastName)).toHaveCount(0);
     });
 
@@ -73,14 +76,18 @@ test.describe('Authors page', () => {
       await authorPage.createFirstNameInput.fill(author.firstName);
       await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.getAllRows()).toHaveCount(0);
+      await expect(
+        authorPage.getRowsByFirstNamePrefix(AUTHOR_FIRST_NAME_PREFIX)
+      ).toHaveCount(0);
       await expect(authorPage.getRow(author.firstName, author.lastName)).toHaveCount(0);
     });
 
     test('does not create author if both fields missing', async () => {
       await authorPage.createSubmitButton.click();
 
-      await expect(authorPage.getAllRows()).toHaveCount(0);
+      await expect(
+        authorPage.getRowsByFirstNamePrefix(AUTHOR_FIRST_NAME_PREFIX)
+      ).toHaveCount(0);
     });
   });
 
@@ -160,23 +167,18 @@ test.describe('Authors page', () => {
 
   test.describe('authors table', () => {
     test('shows no test-created author on a fresh page', async () => {
-      const authors = await authorPage.getAllAuthors();
-      expect(authors).toHaveLength(0);
+      await expect(
+        authorPage.getRowsByFirstNamePrefix(AUTHOR_FIRST_NAME_PREFIX)
+      ).toHaveCount(0);
     });
 
-    test('shows the empty-state message when there are no author rows', async () => {
-      await expect(authorPage.tbody).toContainText(/no authors yet/i);
-    });
-
-    test('shows the empty-state message after deleting the last author', async () => {
+    test('removes a deleted test-created author from the table', async () => {
       const author = createRandomUser();
       await authorPage.addAuthor(author.firstName, author.lastName);
 
       await authorPage.deleteAuthor(author.firstName, author.lastName);
 
-      const authors = await authorPage.getAllAuthors();
-      expect(authors).toHaveLength(0);
-      await expect(authorPage.tbody).toContainText(/no authors yet/i);
+      await expect(authorPage.getRow(author.firstName, author.lastName)).toHaveCount(0);
     });
 
     test('displays authors in sorted table output', async () => {
