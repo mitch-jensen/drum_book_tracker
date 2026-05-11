@@ -8,3 +8,5 @@ formatter:
   force_array_style: block
   force_quote_style: double
   pad_line_comments: 2
+exclude:
+  - "e2e/pnpm-lock.yaml"

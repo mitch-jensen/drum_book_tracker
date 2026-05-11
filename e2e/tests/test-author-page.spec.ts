@@ -1,17 +1,19 @@
 import { test, expect } from '@playwright/test';
 import { AuthorPage } from './playwright-author-page';
-import { faker } from '@faker-js/faker';
-
 
 type Author = {
   firstName: string;
   lastName: string;
 };
 
+let authorSequence = 0;
+
 function createRandomUser(): Author {
+  authorSequence += 1;
+
   return {
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
+    firstName: `E2EFirst${authorSequence}`,
+    lastName: `E2ELast${authorSequence}`,
   };
 }
 
@@ -168,7 +170,6 @@ test.describe('Authors page', () => {
 
     test('shows the empty-state message after deleting the last author', async () => {
       const author = createRandomUser();
-      await authorPage.addAuthor(author.firstName, author.lastName);
       await authorPage.addAuthor(author.firstName, author.lastName);
 
       await authorPage.deleteAuthor(author.firstName, author.lastName);

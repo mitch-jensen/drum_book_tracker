@@ -62,7 +62,7 @@ export class AuthorPage {
         await this.createLastNameInput.fill(lastName);
         await this.createSubmitButton.click();
 
-        await expect(this.getRow(firstName, lastName)).toBeVisible();
+        await expect(this.getRow(firstName, lastName).first()).toBeVisible();
 
         // Verify form is cleared after submission
         await expect(this.createFirstNameInput).toHaveValue('');
@@ -95,6 +95,8 @@ export class AuthorPage {
     }
 
     async deleteAllAuthors() {
+        await this.goto();
+
         while ((await this.getAllRows().count()) > 0) {
             const initialCount = await this.authorCount();
             const row = this.getAllRows().first();
@@ -152,7 +154,7 @@ export class AuthorPage {
         await row.getByRole('button', { name: /^save$/i }).click();
 
         await expect(this.getRow(newFirstName, newLastName)).toHaveCount(1);
-        await expect(this.getRow(newFirstName, newLastName)).toBeVisible();
+        await expect(this.getRow(newFirstName, newLastName).first()).toBeVisible();
     }
 
     async getAllAuthors(): Promise<{ firstName: string; lastName: string }[]> {

@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING, NamedTuple, TypedDict, TypeGuard
 
-from django.db.models import Avg, Count, IntegerField, Max, Min, Q
+from django.db.models import Avg, Count, IntegerField, Max, Min, Q, QuerySet
 from django.db.models.functions import Cast
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -21,7 +20,7 @@ from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Ta
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
-    from django.http import QueryDict
+    from django.http import HttpResponse, QueryDict
 
     from core.htmx import HtmxHttpRequest
 
@@ -71,7 +70,7 @@ def _is_page_range_parse_success(result: PageRangeParseResultDict) -> TypeGuard[
 # --- Author views ---
 
 
-def get_authors():
+def get_authors() -> QuerySet[Author]:
     return Author.objects.order_by("last_name", "first_name")
 
 
@@ -110,14 +109,17 @@ def author_create(request: HtmxHttpRequest) -> HttpResponse:
     if form.is_valid():
         form.save()
 
-        return render(
+        response = render(
             request,
-            "book_tracker/authors/_create_success.html",
+            "book_tracker/authors/_list.html",
             {
                 "authors": get_authors(),
                 "form": AuthorForm(),
             },
         )
+        response["HX-Retarget"] = "#author-list-container"
+        response["HX-Reswap"] = "innerHTML"
+        return response
 
     return render(
         request,
