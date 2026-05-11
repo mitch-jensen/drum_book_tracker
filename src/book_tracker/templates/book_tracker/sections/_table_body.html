@@ -1,9 +1,21 @@
-{% if sections %}
-    {% for section in sections %}
-        {% include "book_tracker/sections/_row.html" %}
+{% if section_books %}
+    {% for book in section_books %}
+        <section class="mb-4">
+            <h2 class="h5">{{ book.title }}</h2>
+            <div id="section-sortable-{{ book.id }}"
+                 class="list-group sortable"
+                 hx-post="{% url 'section-reorder' %}"
+                 hx-trigger="end"
+                 hx-include="#section-sortable-{{ book.id }} input[name='section']"
+                 hx-target="#section-list-container"
+                 hx-swap="innerHTML">
+                <div class="htmx-indicator list-group-item text-muted">Updating...</div>
+                {% for section in book.sections.all %}
+                    {% include "book_tracker/sections/_row.html" %}
+                {% endfor %}
+            </div>
+        </section>
     {% endfor %}
 {% else %}
-    <tr id="no-sections-row">
-        <td colspan="4" class="text-center text-muted py-4">No sections yet.</td>
-    </tr>
+    <p class="text-center text-muted py-4">No sections yet.</p>
 {% endif %}

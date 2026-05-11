@@ -39,7 +39,6 @@ function createSection(bookTitle: string): Section {
   return {
     bookTitle,
     title: `${LOG_SECTION_TITLE_PREFIX} ${logSequence}`,
-    order: `${logSequence}`,
   };
 }
 

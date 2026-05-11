@@ -4,7 +4,8 @@ import functools
 from http import HTTPStatus
 from typing import TYPE_CHECKING, NamedTuple
 
-from django.db.models import IntegerField, QuerySet
+from django.db import transaction
+from django.db.models import IntegerField, Max, Prefetch, QuerySet
 from django.db.models.functions import Cast
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -32,7 +33,6 @@ require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
 
 class SectionFormRow(NamedTuple):
     section_title: str
-    section_order: str
 
 
 def require_htmx(view_func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
@@ -247,6 +247,10 @@ def get_sections() -> QuerySet[Section]:
     return Section.objects.select_related("book").order_by("book__title", "order")
 
 
+def get_section_books() -> QuerySet[Book]:
+    return Book.objects.prefetch_related(Prefetch("sections", queryset=Section.objects.order_by("order"))).filter(sections__isnull=False).distinct().order_by("title")
+
+
 @require_GET
 def section_list(request: HtmxHttpRequest) -> HttpResponse:
     return render(
@@ -254,6 +258,7 @@ def section_list(request: HtmxHttpRequest) -> HttpResponse:
         "book_tracker/sections/list.html",
         {
             "sections": get_sections(),
+            "section_books": get_section_books(),
             "form": SectionForm(),
         },
     )
@@ -285,7 +290,7 @@ def section_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
         return render(
             request,
             "book_tracker/sections/_table_body.html",
-            {"sections": get_sections()},
+            {"sections": get_sections(), "section_books": get_section_books()},
         )
 
     return render(
@@ -311,56 +316,31 @@ def section_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return render(
         request,
         "book_tracker/sections/_table_body.html",
-        {"sections": get_sections()},
+        {"sections": get_sections(), "section_books": get_section_books()},
     )
 
 
 def _section_form_rows_from_post(request: HtmxHttpRequest) -> list[SectionFormRow]:
     return build_form_rows(
         request.POST,
-        ("section_title", "section_order"),
+        ("section_title",),
         SectionFormRow,
-        SectionFormRow(section_title="", section_order=""),
+        SectionFormRow(section_title=""),
     )
 
 
-def _validate_section_form_rows(book: Book, rows: list[SectionFormRow]) -> tuple[list[tuple[str, int]], list[str]]:
-    parsed_rows: list[tuple[str, int]] = []
+def _validate_section_form_rows(rows: list[SectionFormRow]) -> tuple[list[str], list[str]]:
+    parsed_rows: list[str] = []
     errors: list[str] = []
-    submitted_orders: list[int] = []
 
     for row_index, row in enumerate(rows, 1):
         title = row.section_title.strip()
-        raw_order = row.section_order.strip()
 
-        if not title or not raw_order:
-            errors.append(f"Section row {row_index}: all fields are required.")
+        if not title:
+            errors.append(f"Section row {row_index}: title is required.")
             continue
 
-        try:
-            order = int(raw_order)
-        except ValueError:
-            errors.append(f"Section row {row_index}: order must be an integer.")
-            continue
-
-        if order < 1:
-            errors.append(f"Section row {row_index}: order must be positive.")
-            continue
-
-        submitted_orders.append(order)
-        parsed_rows.append((title, order))
-
-    duplicate_orders = sorted({order for order in submitted_orders if submitted_orders.count(order) > 1})
-    if duplicate_orders:
-        errors.append(f"Duplicate section orders submitted: {', '.join(str(order) for order in duplicate_orders)}.")
-
-    existing_orders = set(
-        Section.objects.filter(book=book, order__in=submitted_orders).values_list("order", flat=True),
-    )
-    if existing_orders:
-        errors.append(
-            f"Sections with these orders already exist for {book.title}: {', '.join(str(order) for order in sorted(existing_orders))}.",
-        )
+        parsed_rows.append(title)
 
     return parsed_rows, errors
 
@@ -390,11 +370,12 @@ def section_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
 
         if form.is_valid():
             book = form.cleaned_data["book"]
-            parsed_rows, section_row_errors = _validate_section_form_rows(book, section_rows)
+            parsed_rows, section_row_errors = _validate_section_form_rows(section_rows)
 
             if not section_row_errors:
+                next_order = (Section.objects.filter(book=book).order_by("-order").values_list("order", flat=True).first() or 0) + 1
                 Section.objects.bulk_create(
-                    [Section(book=book, title=title, order=order) for title, order in parsed_rows],
+                    [Section(book=book, title=title, order=next_order + index) for index, title in enumerate(parsed_rows)],
                 )
                 return redirect("section-list")
 
@@ -403,7 +384,7 @@ def section_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
     return _render_section_bulk_create(
         request,
         BulkSectionCreateForm(),
-        [SectionFormRow(section_title="", section_order="")],
+        [SectionFormRow(section_title="")],
     )
 
 
@@ -413,7 +394,50 @@ def section_form_row(request: HtmxHttpRequest) -> HttpResponse:
     return render(
         request,
         "book_tracker/sections/_section_form_row.html",
-        {"section_title": "", "section_order": ""},
+        {"section_title": ""},
+    )
+
+
+@require_POST
+@require_htmx
+def section_reorder(request: HtmxHttpRequest) -> HttpResponse:
+    section_ids = request.POST.getlist("section")
+    sections = list(Section.objects.select_related("book").filter(pk__in=section_ids))
+
+    if len(sections) != len(section_ids):
+        return HttpResponseBadRequest()
+
+    sections_by_id = {str(section.pk): section for section in sections}
+    ordered_sections = [sections_by_id[section_id] for section_id in section_ids]
+    book_ids = {section.book_id for section in ordered_sections}
+
+    if len(book_ids) != 1:
+        return HttpResponseBadRequest()
+
+    book_id = next(iter(book_ids))
+    book_section_ids = set(Section.objects.filter(book_id=book_id).values_list("pk", flat=True))
+
+    if {section.pk for section in ordered_sections} != book_section_ids:
+        return HttpResponseBadRequest()
+
+    max_order = Section.objects.filter(book_id=book_id).aggregate(max_order=Max("order"))["max_order"] or 0
+
+    with transaction.atomic():
+        for index, section in enumerate(ordered_sections, 1):
+            section.order = max_order + index
+            section.save(update_fields=["order"])
+
+        for index, section in enumerate(ordered_sections, 1):
+            section.order = index
+            section.save(update_fields=["order"])
+
+    return render(
+        request,
+        "book_tracker/sections/_list.html",
+        {
+            "sections": get_sections(),
+            "section_books": get_section_books(),
+        },
     )
 
 

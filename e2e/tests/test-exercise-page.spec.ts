@@ -37,7 +37,6 @@ function createSection(bookTitle: string): Section {
   return {
     bookTitle,
     title: `${EXERCISE_SECTION_TITLE_PREFIX} ${exerciseSequence}`,
-    order: `${exerciseSequence}`,
   };
 }
 

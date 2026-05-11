@@ -33,7 +33,6 @@ function createSection(bookTitle: string): Section {
   return {
     bookTitle,
     title: `${SECTION_TITLE_PREFIX} ${sectionSequence}`,
-    order: `${sectionSequence}`,
   };
 }
 
@@ -69,7 +68,7 @@ test.describe('Sections page', () => {
     await authorPage.deleteAllAuthors(SECTION_AUTHOR_FIRST_NAME_PREFIX);
   });
 
-  test('adds a section and shows it in the table', async () => {
+  test('adds a section and shows it in the list', async () => {
     const section = createSection(book.title);
 
     await sectionPage.addSection(section);
@@ -77,7 +76,7 @@ test.describe('Sections page', () => {
     await expect(sectionPage.getRow(section)).toBeVisible();
   });
 
-  test('adds multiple sections for one book and shows them in the table', async () => {
+  test('adds multiple sections for one book and shows them in the list', async () => {
     const section = createSection(book.title);
     const secondSection = createSection(book.title);
 
@@ -92,7 +91,6 @@ test.describe('Sections page', () => {
 
     await sectionPage.gotoBulkCreate();
     await sectionPage.createBookSelect.selectOption({ label: section.bookTitle });
-    await sectionPage.createOrderInput.fill(section.order);
     await sectionPage.createSubmitButton.click();
 
     await expect(sectionPage.createForm).toBeVisible();
@@ -107,9 +105,7 @@ test.describe('Sections page', () => {
 
     const row = await sectionPage.openEdit(section);
 
-    await expect(row.locator('select[name="book"]')).toBeVisible();
     await expect(row.getByRole('textbox')).toBeVisible();
-    await expect(row.getByRole('spinbutton')).toBeVisible();
     await expect(row.getByRole('button', { name: /save/i })).toBeVisible();
   });
 
@@ -124,7 +120,7 @@ test.describe('Sections page', () => {
     await expect(sectionPage.getRow(section)).toHaveCount(0);
   });
 
-  test('removes a deleted test-created section from the table', async () => {
+  test('removes a deleted test-created section from the list', async () => {
     const section = createSection(book.title);
 
     await sectionPage.addSection(section);

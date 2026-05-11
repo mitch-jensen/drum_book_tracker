@@ -71,7 +71,7 @@ class TestSectionBulkCreate:
         assert b"Bulk Create Sections" in response.content
         assert b"id_book" in response.content
         assert b"section_title" in response.content
-        assert b"section_order" in response.content
+        assert b"section_order" not in response.content
 
     def test_creates_multiple_sections_for_one_book(self, client: Client) -> None:
         book = BookFactory.create(title="Stick Control")
@@ -81,7 +81,6 @@ class TestSectionBulkCreate:
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", "Rolls", "Flams"],
-                "section_order": ["1", "2", "3"],
             },
         )
 
@@ -98,31 +97,14 @@ class TestSectionBulkCreate:
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", ""],
-                "section_order": ["1", "2"],
             },
         )
 
         assert response.status_code == HTTPStatus.OK
-        assert b"all fields are required" in response.content
+        assert b"title is required" in response.content
         assert not Section.objects.filter(book=book).exists()
 
-    def test_duplicate_submitted_orders_show_error(self, client: Client) -> None:
-        book = BookFactory.create(title="Stick Control")
-
-        response = client.post(
-            reverse("section-bulk-create"),
-            {
-                "book": str(book.pk),
-                "section_title": ["Warmups", "Rolls"],
-                "section_order": ["1", "1"],
-            },
-        )
-
-        assert response.status_code == HTTPStatus.OK
-        assert b"Duplicate section orders" in response.content
-        assert not Section.objects.filter(book=book).exists()
-
-    def test_existing_order_conflict_shows_error(self, client: Client) -> None:
+    def test_appends_orders_after_existing_book_sections(self, client: Client) -> None:
         book = BookFactory.create(title="Stick Control")
         SectionFactory.create(book=book, title="Existing", order=2)
 
@@ -131,13 +113,42 @@ class TestSectionBulkCreate:
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", "Rolls"],
-                "section_order": ["1", "2"],
             },
         )
 
+        assert response.status_code == HTTPStatus.FOUND
+        assert list(
+            Section.objects.filter(book=book).order_by("order").values_list("title", "order"),
+        ) == [("Existing", 2), ("Warmups", 3), ("Rolls", 4)]
+
+    def test_reorder_updates_section_orders_for_one_book(self, client: Client) -> None:
+        book = BookFactory.create(title="Stick Control")
+        first = SectionFactory.create(book=book, title="Warmups", order=1)
+        second = SectionFactory.create(book=book, title="Rolls", order=2)
+        third = SectionFactory.create(book=book, title="Flams", order=3)
+
+        response = client.post(
+            reverse("section-reorder"),
+            {"section": [str(third.pk), str(first.pk), str(second.pk)]},
+            **HTMX_HEADERS,
+        )
+
         assert response.status_code == HTTPStatus.OK
-        assert b"already exist" in response.content
-        assert Section.objects.filter(book=book).count() == 1
+        assert list(
+            Section.objects.filter(book=book).order_by("order").values_list("title", "order"),
+        ) == [("Flams", 1), ("Warmups", 2), ("Rolls", 3)]
+
+    def test_reorder_rejects_sections_from_multiple_books(self, client: Client) -> None:
+        first = SectionFactory.create(title="Warmups", order=1)
+        second = SectionFactory.create(title="Rolls", order=1)
+
+        response = client.post(
+            reverse("section-reorder"),
+            {"section": [str(first.pk), str(second.pk)]},
+            **HTMX_HEADERS,
+        )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
 
 
 class TestSectionFormRow:
@@ -147,6 +158,7 @@ class TestSectionFormRow:
         assert response.status_code == HTTPStatus.OK
         assert b"section-form-row" in response.content
         assert b"section_title" in response.content
+        assert b"section_order" not in response.content
 
     def test_requires_htmx(self, client: Client) -> None:
         response = client.get(reverse("section-form-row"))

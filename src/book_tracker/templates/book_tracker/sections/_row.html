@@ -1,8 +1,8 @@
-<tr id="section-{{ section.id }}">
-    <td>{{ section.book }}</td>
-    <td>{{ section.title }}</td>
-    <td>{{ section.order }}</td>
-    <td class="text-end">
+<div id="section-{{ section.id }}"
+     class="list-group-item d-flex justify-content-between align-items-center gap-3">
+    <input type="hidden" name="section" value="{{ section.id }}">
+    <span class="flex-grow-1">{{ section.title }}</span>
+    <span class="d-flex gap-2">
         <button type="button"
                 class="btn btn-sm btn-outline-primary"
                 hx-get="{% url 'section-edit' section.id %}"
@@ -13,5 +13,5 @@
                 hx-get="{% url 'section-confirm-delete' section.id %}"
                 hx-target="#section-{{ section.id }}"
                 hx-swap="outerHTML">Delete</button>
-    </td>
-</tr>
+    </span>
+</div>

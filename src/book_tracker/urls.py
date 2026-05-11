@@ -28,6 +28,7 @@ urlpatterns = [
     path("sections/", htmx_crud_views.section_list, name="section-list"),
     path("sections/bulk-create/", htmx_crud_views.section_bulk_create, name="section-bulk-create"),
     path("sections/form-row/", htmx_crud_views.section_form_row, name="section-form-row"),
+    path("sections/reorder/", htmx_crud_views.section_reorder, name="section-reorder"),
     path("sections/<str:pk>/", htmx_crud_views.section_row, name="section-row"),
     path("sections/<str:pk>/edit/", htmx_crud_views.section_edit, name="section-edit"),
     path("sections/<str:pk>/update/", htmx_crud_views.section_update, name="section-update"),

@@ -6,3 +6,37 @@
     <h1 class="mb-4">Sections</h1>
     <div id="section-list-container">{% include "book_tracker/sections/_list.html" %}</div>
 {% endblock content %}
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <script>
+        htmx.onLoad(function(content) {
+            var sortables = content.querySelectorAll(".sortable");
+            for (var i = 0; i < sortables.length; i++) {
+                var sortable = sortables[i];
+                if (sortable.dataset.sortableReady === "true") {
+                    continue;
+                }
+
+                var sortableInstance = new Sortable(sortable, {
+                    animation: 150,
+                    ghostClass: "bg-primary-subtle",
+                    filter: ".htmx-indicator, button",
+                    onMove: function(evt) {
+                        return evt.related.className.indexOf("htmx-indicator") === -1;
+                    },
+                    onEnd: function() {
+                        this.option("disabled", true);
+                    }
+                });
+                sortable.dataset.sortableReady = "true";
+                sortable.addEventListener("htmx:afterSwap", function() {
+                    sortableInstance.option("disabled", false);
+                });
+                sortable.addEventListener("htmx:responseError", function() {
+                    sortableInstance.option("disabled", false);
+                });
+            }
+        });
+    </script>
+{% endblock extra_js %}

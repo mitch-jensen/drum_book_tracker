@@ -34,8 +34,8 @@
         <h5 class="mt-4">Sections</h5>
         <p class="text-muted small">Create all sections for the selected book in display order.</p>
         <div id="section-rows">
-            {% for section_title, section_order in section_rows %}
-                {% include "book_tracker/sections/_section_form_row.html" %}
+            {% for section_row in section_rows %}
+                {% include "book_tracker/sections/_section_form_row.html" with section_title=section_row.section_title %}
             {% endfor %}
         </div>
         <button type="button"

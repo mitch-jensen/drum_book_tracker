@@ -3,27 +3,26 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export type Section = {
     bookTitle: string;
     title: string;
-    order: string;
 };
 
 export class SectionPage {
     readonly page: Page;
 
-    readonly table: Locator;
-    readonly tbody: Locator;
+    readonly listContainer: Locator;
+    readonly sectionBody: Locator;
     readonly createForm: Locator;
 
     constructor(page: Page) {
         this.page = page;
-        this.table = page.getByRole('table');
-        this.tbody = this.table.locator('tbody');
+        this.listContainer = page.locator('#section-list-container');
+        this.sectionBody = page.locator('#section-table-body');
         this.createForm = page.locator('#section-bulk-create-form');
     }
 
     async goto() {
         await this.page.goto('/sections/');
-        await expect(this.table).toBeVisible();
-        await expect(this.tbody).toBeVisible();
+        await expect(this.listContainer).toBeVisible();
+        await expect(this.sectionBody).toBeVisible();
     }
 
     async gotoBulkCreate() {
@@ -32,38 +31,32 @@ export class SectionPage {
     }
 
     getAllRows(): Locator {
-        return this.tbody.getByRole('row').filter({
+        return this.sectionBody.locator('.list-group-item').filter({
             has: this.page.getByRole('button', { name: /^delete$/i }),
         });
     }
 
     getRowsByTitlePrefix(titlePrefix: string): Locator {
         return this.getAllRows().filter({
-            has: this.page.getByRole('cell', {
-                name: new RegExp(`^${titlePrefix}`),
-            }),
+            hasText: new RegExp(titlePrefix),
         });
     }
 
     getRow(section: Section): Locator {
-        return this.getAllRows()
+        return this.page
+            .locator('section')
             .filter({
-                has: this.page.getByRole('cell', {
+                has: this.page.getByRole('heading', {
                     name: section.bookTitle,
                     exact: true,
                 }),
             })
+            .locator('.list-group-item')
             .filter({
-                has: this.page.getByRole('cell', {
-                    name: section.title,
-                    exact: true,
-                }),
+                has: this.page.getByRole('button', { name: /^delete$/i }),
             })
             .filter({
-                has: this.page.getByRole('cell', {
-                    name: section.order,
-                    exact: true,
-                }),
+                hasText: new RegExp(`^\\s*${section.title}\\s*Edit\\s*Delete\\s*$`),
             });
     }
 
@@ -85,12 +78,11 @@ export class SectionPage {
             }
 
             await this.createTitleInputs.nth(index).fill(section.title);
-            await this.createOrderInputs.nth(index).fill(section.order);
         }
 
         await this.createSubmitButton.click();
 
-        await expect(this.table).toBeVisible();
+        await expect(this.listContainer).toBeVisible();
         for (const section of sections) {
             await expect(this.getRow(section).first()).toBeVisible();
         }
@@ -127,7 +119,7 @@ export class SectionPage {
         await expect(rows).toHaveCount(0);
 
         if (titlePrefix === undefined) {
-            await expect(this.tbody).toContainText(/no sections yet/i);
+            await expect(this.sectionBody).toContainText(/no sections yet/i);
         }
     }
 
@@ -143,7 +135,7 @@ export class SectionPage {
 
         await displayRow.getByRole('button', { name: /^edit$/i }).click();
 
-        const editRow = this.tbody.locator(`tr[id="${rowId}"]`);
+        const editRow = this.sectionBody.locator(`[id="${rowId}"]`);
         await expect(editRow.getByRole('textbox')).toBeVisible();
 
         return editRow;
@@ -152,9 +144,7 @@ export class SectionPage {
     async editSection(currentSection: Section, updatedSection: Section) {
         const row = await this.openEdit(currentSection);
 
-        await row.locator('select[name="book"]').selectOption({ label: updatedSection.bookTitle });
         await row.getByRole('textbox').fill(updatedSection.title);
-        await row.getByRole('spinbutton').fill(updatedSection.order);
         await row.getByRole('button', { name: /^save$/i }).click();
 
         await expect(this.getRow(updatedSection)).toHaveCount(1);
@@ -169,16 +159,8 @@ export class SectionPage {
         return this.createTitleInputs.nth(0);
     }
 
-    get createOrderInput() {
-        return this.createOrderInputs.nth(0);
-    }
-
     get createTitleInputs() {
         return this.createForm.locator('input[name="section_title"]');
-    }
-
-    get createOrderInputs() {
-        return this.createForm.locator('input[name="section_order"]');
     }
 
     get createSubmitButton() {
@@ -190,6 +172,6 @@ export class SectionPage {
     }
 
     get confirmDeleteButton() {
-        return this.tbody.getByRole('button', { name: /confirm delete/i });
+        return this.sectionBody.getByRole('button', { name: /confirm delete/i });
     }
 }
