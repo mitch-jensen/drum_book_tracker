@@ -29,6 +29,19 @@ class TestSectionViews:
         assert response.status_code == HTTPStatus.OK
         assert reverse("section-bulk-create").encode() in response.content
 
+    def test_list_renders_sortable_section_handles(self, client: Client) -> None:
+        book = BookFactory.create(title="Stick Control")
+        SectionFactory.create(book=book, title="Warmups", order=1)
+        SectionFactory.create(book=book, title="Rolls", order=2)
+
+        response = client.get(reverse("section-list"))
+
+        assert response.status_code == HTTPStatus.OK
+        assert b'class="list-group sortable"' in response.content
+        assert b'hx-trigger="end"' in response.content
+        assert b"section-drag-handle" in response.content
+        assert b"data-sortable-section" in response.content
+
     def test_row_and_edit_render_for_existing_section(self, client: Client) -> None:
         section = SectionFactory.create(title="Chapter 1", order=1)
 

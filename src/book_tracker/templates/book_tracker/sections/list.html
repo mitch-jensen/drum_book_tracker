@@ -10,33 +10,47 @@
     {{ block.super }}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script>
-        htmx.onLoad(function(content) {
-            var sortables = content.querySelectorAll(".sortable");
-            for (var i = 0; i < sortables.length; i++) {
-                var sortable = sortables[i];
-                if (sortable.dataset.sortableReady === "true") {
-                    continue;
+        (function() {
+            function initSectionSortables(content) {
+                if (typeof Sortable === "undefined") {
+                    return;
                 }
 
-                var sortableInstance = new Sortable(sortable, {
-                    animation: 150,
-                    ghostClass: "bg-primary-subtle",
-                    filter: ".htmx-indicator, button",
-                    onMove: function(evt) {
-                        return evt.related.className.indexOf("htmx-indicator") === -1;
-                    },
-                    onEnd: function() {
-                        this.option("disabled", true);
+                var scope = content || document;
+                var sortables = [];
+
+                if (scope.matches && scope.matches(".sortable")) {
+                    sortables.push(scope);
+                }
+
+                sortables = sortables.concat(Array.prototype.slice.call(scope.querySelectorAll(".sortable")));
+
+                for (var i = 0; i < sortables.length; i++) {
+                    var sortable = sortables[i];
+                    if (sortable.dataset.sortableReady === "true") {
+                        continue;
                     }
-                });
-                sortable.dataset.sortableReady = "true";
-                sortable.addEventListener("htmx:afterSwap", function() {
-                    sortableInstance.option("disabled", false);
-                });
-                sortable.addEventListener("htmx:responseError", function() {
-                    sortableInstance.option("disabled", false);
-                });
+
+                    new Sortable(sortable, {
+                        animation: 150,
+                        draggable: "[data-sortable-section]",
+                        handle: ".section-drag-handle",
+                        ghostClass: "bg-primary-subtle",
+                        chosenClass: "bg-body-secondary",
+                        filter: "a, button, input, select, textarea",
+                        preventOnFilter: false
+                    });
+                    sortable.dataset.sortableReady = "true";
+                }
             }
-        });
+
+            document.addEventListener("DOMContentLoaded", function() {
+                initSectionSortables(document);
+            });
+
+            document.body.addEventListener("htmx:load", function(event) {
+                initSectionSortables(event.detail.elt);
+            });
+        })();
     </script>
 {% endblock extra_js %}
