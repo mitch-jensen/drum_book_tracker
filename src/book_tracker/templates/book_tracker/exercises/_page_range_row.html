@@ -1,18 +1,16 @@
 <div class="page-range-row row g-2 mb-2 align-items-end">
     <div class="col">
         <label class="form-label">From</label>
-        <input type="number"
+        <input type="text"
                name="range_start"
                class="form-control"
-               min="1"
                {% if range_start %}value="{{ range_start }}"{% endif %}>
     </div>
     <div class="col">
         <label class="form-label">To</label>
-        <input type="number"
+        <input type="text"
                name="range_end"
                class="form-control"
-               min="1"
                {% if range_end %}value="{{ range_end }}"{% endif %}>
     </div>
     <div class="col">
@@ -30,5 +28,8 @@
                 hx-get="{% url 'page-range-row' %}"
                 hx-target="closest .page-range-row"
                 hx-swap="delete">Remove</button>
+    </div>
+    <div class="col-12">
+        <div class="invalid-feedback d-block exercise-page-range-error"></div>
     </div>
 </div>

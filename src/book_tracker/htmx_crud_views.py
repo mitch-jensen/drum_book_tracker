@@ -31,6 +31,19 @@ require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
 
 class SectionFormRow(NamedTuple):
     section_title: str
+    section_start_page: str
+    section_end_page: str
+
+
+class ParsedSectionFormRow(NamedTuple):
+    title: str
+    start_page: int
+    end_page: int
+
+
+class SectionFormRowParseResult(NamedTuple):
+    parsed_row: ParsedSectionFormRow | None
+    errors: list[str]
 
 
 def get_tags() -> QuerySet[Tag]:
@@ -311,25 +324,69 @@ def section_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
 def _section_form_rows_from_post(request: HtmxHttpRequest) -> list[SectionFormRow]:
     return build_form_rows(
         request.POST,
-        ("section_title",),
+        ("section_title", "section_start_page", "section_end_page"),
         SectionFormRow,
-        SectionFormRow(section_title=""),
+        SectionFormRow(section_title="", section_start_page="", section_end_page=""),
     )
 
 
-def _validate_section_form_rows(rows: list[SectionFormRow]) -> tuple[list[str], list[str]]:
-    parsed_rows: list[str] = []
+def _parse_section_form_row(book: Book, row: SectionFormRow, row_index: int) -> SectionFormRowParseResult:
+    errors: list[str] = []
+    title = row.section_title.strip()
+    raw_start_page = row.section_start_page.strip()
+    raw_end_page = row.section_end_page.strip()
+
+    if not title:
+        return SectionFormRowParseResult(parsed_row=None, errors=[f"Section row {row_index}: title is required."])
+    if not raw_start_page or not raw_end_page:
+        return SectionFormRowParseResult(parsed_row=None, errors=[f"Section row {row_index}: start page and end page are required."])
+
+    try:
+        start_page = int(raw_start_page)
+        end_page = int(raw_end_page)
+    except ValueError:
+        return SectionFormRowParseResult(parsed_row=None, errors=[f"Section row {row_index}: start page and end page must be integers."])
+
+    if start_page > end_page:
+        errors.append(f"Section row {row_index}: start page must be less than or equal to end page.")
+        return SectionFormRowParseResult(parsed_row=None, errors=errors)
+    if start_page < 1 or end_page > book.page_count:
+        errors.append(f"Section row {row_index}: section pages must be between 1 and {book.page_count}.")
+
+    parsed_row = ParsedSectionFormRow(title=title, start_page=start_page, end_page=end_page)
+    return SectionFormRowParseResult(parsed_row=parsed_row, errors=errors)
+
+
+def _find_section_range_overlaps(book: Book, parsed_rows: list[ParsedSectionFormRow]) -> list[str]:
+    errors: list[str] = []
+
+    existing_ranges = [
+        (title, start_page, end_page, False)
+        for title, start_page, end_page in Section.objects.filter(book=book).order_by("start_page").values_list("title", "start_page", "end_page")
+    ]
+    new_ranges = [(row.title, row.start_page, row.end_page, True) for row in parsed_rows]
+    all_ranges = existing_ranges + new_ranges
+    for index, (title, start_page, end_page, is_new) in enumerate(all_ranges):
+        for other_title, other_start_page, other_end_page, other_is_new in all_ranges[index + 1 :]:
+            if not is_new and not other_is_new:
+                continue
+            if start_page <= other_end_page and end_page >= other_start_page:
+                errors.append(f"Section page ranges overlap: {title} ({start_page}-{end_page}) and {other_title} ({other_start_page}-{other_end_page}).")
+
+    return errors
+
+
+def _validate_section_form_rows(book: Book, rows: list[SectionFormRow]) -> tuple[list[ParsedSectionFormRow], list[str]]:
+    parsed_rows: list[ParsedSectionFormRow] = []
     errors: list[str] = []
 
     for row_index, row in enumerate(rows, 1):
-        title = row.section_title.strip()
+        result = _parse_section_form_row(book, row, row_index)
+        errors.extend(result.errors)
+        if result.parsed_row is not None:
+            parsed_rows.append(result.parsed_row)
 
-        if not title:
-            errors.append(f"Section row {row_index}: title is required.")
-            continue
-
-        parsed_rows.append(title)
-
+    errors.extend(_find_section_range_overlaps(book, parsed_rows))
     return parsed_rows, errors
 
 
@@ -358,12 +415,21 @@ def section_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
 
         if form.is_valid():
             book = form.cleaned_data["book"]
-            parsed_rows, section_row_errors = _validate_section_form_rows(section_rows)
+            parsed_rows, section_row_errors = _validate_section_form_rows(book, section_rows)
 
             if not section_row_errors:
                 next_order = (Section.objects.filter(book=book).order_by("-order").values_list("order", flat=True).first() or 0) + 1
                 Section.objects.bulk_create(
-                    [Section(book=book, title=title, order=next_order + index) for index, title in enumerate(parsed_rows)],
+                    [
+                        Section(
+                            book=book,
+                            title=row.title,
+                            order=next_order + index,
+                            start_page=row.start_page,
+                            end_page=row.end_page,
+                        )
+                        for index, row in enumerate(parsed_rows)
+                    ],
                 )
                 return redirect("section-list")
 
@@ -372,7 +438,7 @@ def section_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
     return _render_section_bulk_create(
         request,
         BulkSectionCreateForm(),
-        [SectionFormRow(section_title="")],
+        [SectionFormRow(section_title="", section_start_page="", section_end_page="")],
     )
 
 
@@ -382,7 +448,7 @@ def section_form_row(request: HtmxHttpRequest) -> HttpResponse:
     return render(
         request,
         "book_tracker/sections/_section_form_row.html",
-        {"section_title": ""},
+        {"section_title": "", "section_start_page": "", "section_end_page": ""},
     )
 
 

@@ -5,6 +5,7 @@ from crispy_forms.layout import Layout
 from django import forms
 from django.urls import reverse_lazy
 
+from book_tracker.identifier_sequences import generate_identifier_sequence
 from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
 
 
@@ -20,6 +21,12 @@ def _require_model_choice_field(field: forms.Field) -> forms.ModelChoiceField:
         msg = "Expected a ModelChoiceField."
         raise TypeError(msg)
     return field
+
+
+def _format_section_choice_label(obj: object) -> str:
+    if not isinstance(obj, Section):
+        return str(obj)
+    return f"{obj.book.title} - {obj.title} (pp. {obj.start_page}-{obj.end_page})"
 
 
 class CrispyNoTagMixin:
@@ -81,12 +88,42 @@ class BookForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
 class SectionForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
     class Meta:  # noqa: D106
         model = Section
-        fields = ("book", "title", "order")
+        fields = ("book", "title", "order", "start_page", "end_page")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
         super().__init__(*args, **kwargs)
-        self.init_helper("book", "title", "order")
+        self.init_helper("book", "title", "order", "start_page", "end_page")
         self.apply_bootstrap_field_classes()
+
+    def clean(self) -> dict[str, Any]:  # noqa: D102
+        cleaned = super().clean()
+        book = cleaned.get("book")
+        start_page = cleaned.get("start_page")
+        end_page = cleaned.get("end_page")
+
+        if book is None or start_page is None or end_page is None:
+            return cleaned
+
+        if start_page > end_page:
+            msg = "Start page must be less than or equal to end page."
+            raise forms.ValidationError(msg)
+
+        if start_page < 1 or end_page > book.page_count:
+            msg = f"Section pages must be between 1 and {book.page_count}."
+            raise forms.ValidationError(msg)
+
+        overlapping_sections = Section.objects.filter(
+            book=book,
+            start_page__lte=end_page,
+            end_page__gte=start_page,
+        )
+        if self.instance.pk:
+            overlapping_sections = overlapping_sections.exclude(pk=self.instance.pk)
+        if overlapping_sections.exists():
+            msg = "Section page range overlaps another section in this book."
+            raise forms.ValidationError(msg)
+
+        return cleaned
 
 
 class BulkSectionCreateForm(forms.Form):
@@ -105,6 +142,15 @@ class ExerciseForm(CrispyNoTagMixin, BootstrapFieldClassMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.init_helper("section", "identifier", "description", "page_number", "tags")
         self.apply_bootstrap_field_classes()
+
+    def clean_page_number(self) -> int | None:
+        """Validate page_number is within the selected section's page range."""
+        page_number = self.cleaned_data.get("page_number")
+        section = self.cleaned_data.get("section")
+        if page_number is not None and section is not None and not section.start_page <= page_number <= section.end_page:
+            msg = f"Page number must be between {section.start_page} and {section.end_page}."
+            raise forms.ValidationError(msg)
+        return page_number
 
 
 class ExerciseTagFilterForm(forms.Form):
@@ -136,13 +182,18 @@ class BulkExerciseCreateForm(forms.Form):
         queryset=Section.objects.select_related("book").order_by("book__title", "order"),
         widget=forms.Select(attrs={"class": "form-select"}),
     )
-    start = forms.IntegerField(min_value=1, initial=1, widget=forms.NumberInput(attrs={"class": "form-control"}))
-    end = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={"class": "form-control"}))
+    start = forms.CharField(initial="1", widget=forms.TextInput(attrs={"class": "form-control"}))
+    end = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}))
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.order_by("name"),
         required=False,
         widget=forms.SelectMultiple(attrs={"class": "form-select"}),
     )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401, D107
+        super().__init__(*args, **kwargs)
+        section_field = _require_model_choice_field(self.fields["section"])
+        section_field.label_from_instance = _format_section_choice_label
 
     def clean(self) -> dict[str, Any]:  # noqa: D102
         cleaned = super().clean()
@@ -150,11 +201,13 @@ class BulkExerciseCreateForm(forms.Form):
         end = cleaned.get("end")
         section = cleaned.get("section")
         if start is not None and end is not None:
-            if start > end:
-                msg = "Start must be less than or equal to end."
-                raise forms.ValidationError(msg)
+            try:
+                identifiers = generate_identifier_sequence(start, end)
+            except ValueError as exc:
+                raise forms.ValidationError(str(exc)) from exc
+
+            cleaned["identifiers"] = identifiers
             if section is not None:
-                identifiers = [str(i) for i in range(start, end + 1)]
                 existing = set(
                     Exercise.objects.filter(section=section, identifier__in=identifiers).values_list(
                         "identifier",
@@ -162,7 +215,7 @@ class BulkExerciseCreateForm(forms.Form):
                     ),
                 )
                 if existing:
-                    sorted_ids = sorted(existing, key=lambda x: int(x) if x.isdigit() else x)
+                    sorted_ids = [identifier for identifier in identifiers if identifier in existing]
                     msg = f"Exercises with these identifiers already exist in this section: {', '.join(sorted_ids)}"
                     raise forms.ValidationError(
                         msg,

@@ -27,7 +27,20 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="{{ form.book.id_for_label }}" class="form-label">Book</label>
-                {{ form.book }}
+                {% with selected_book=form.book.value|stringformat:"s" %}
+                    <select name="{{ form.book.html_name }}"
+                            id="{{ form.book.id_for_label }}"
+                            class="form-select">
+                        <option value="">---------</option>
+                        {% for book in form.book.field.queryset %}
+                            <option value="{{ book.pk }}"
+                                    data-page-count="{{ book.page_count }}"
+                                    {% if selected_book == book.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ book }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                {% endwith %}
                 {% if form.book.errors %}<div class="invalid-feedback d-block">{{ form.book.errors.0 }}</div>{% endif %}
             </div>
         </div>
@@ -35,7 +48,7 @@
         <p class="text-muted small">Create all sections for the selected book in display order.</p>
         <div id="section-rows">
             {% for section_row in section_rows %}
-                {% include "book_tracker/sections/_section_form_row.html" with section_title=section_row.section_title %}
+                {% include "book_tracker/sections/_section_form_row.html" with section_title=section_row.section_title section_start_page=section_row.section_start_page section_end_page=section_row.section_end_page %}
             {% endfor %}
         </div>
         <button type="button"
@@ -50,3 +63,98 @@
         </div>
     </form>
 {% endblock content %}
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        (function() {
+            function selectedBookPageCount(form) {
+                var book = form.querySelector("[name='book']");
+                var option = book && book.options[book.selectedIndex];
+                return option ? parseInt(option.dataset.pageCount || "", 10) : NaN;
+            }
+
+            function setInvalid(input, message) {
+                input.classList.toggle("is-invalid", Boolean(message));
+                var feedback = input.closest(".section-form-row").querySelector(".section-page-error");
+                feedback.textContent = message || "";
+            }
+
+            function defaultSectionRows(form) {
+                var rows = Array.prototype.slice.call(form.querySelectorAll(".section-form-row"));
+                rows.forEach(function(row, index) {
+                    var start = row.querySelector("[name='section_start_page']");
+                    var end = row.querySelector("[name='section_end_page']");
+                    if (index === 0 && !start.value) {
+                        start.value = "1";
+                    } else if (index > 0 && !start.value) {
+                        var previousEnd = rows[index - 1].querySelector("[name='section_end_page']");
+                        var previousEndValue = parseInt(previousEnd.value || "", 10);
+                        if (!Number.isNaN(previousEndValue)) {
+                            start.value = String(previousEndValue + 1);
+                        }
+                    }
+                    if (!end.value && start.value) {
+                        end.value = start.value;
+                    }
+                });
+            }
+
+            function validateSectionRows(form) {
+                var pageCount = selectedBookPageCount(form);
+                form.querySelectorAll(".section-form-row").forEach(function(row) {
+                    var start = row.querySelector("[name='section_start_page']");
+                    var end = row.querySelector("[name='section_end_page']");
+                    var startValue = parseInt(start.value || "", 10);
+                    var endValue = parseInt(end.value || "", 10);
+                    var message = "";
+                    if (!Number.isNaN(pageCount)) {
+                        if (!Number.isNaN(startValue) && (startValue < 1 || startValue > pageCount)) {
+                            message = "Start page must be between 1 and " + pageCount + ".";
+                        } else if (!Number.isNaN(endValue) && (endValue < 1 || endValue > pageCount)) {
+                            message = "End page must be between 1 and " + pageCount + ".";
+                        } else if (!Number.isNaN(startValue) && !Number.isNaN(endValue) && startValue > endValue) {
+                            message = "Start page must be less than or equal to end page.";
+                        }
+                    }
+                    setInvalid(start, message);
+                    end.classList.toggle("is-invalid", Boolean(message));
+                });
+            }
+
+            function initSectionBulkCreate(root) {
+                var form = (root || document).querySelector("#section-bulk-create-form");
+                if (!form) {
+                    return;
+                }
+                defaultSectionRows(form);
+                validateSectionRows(form);
+                if (form.dataset.bulkEnhanceReady === "true") {
+                    return;
+                }
+                form.addEventListener("input", function(event) {
+                    if (event.target.matches("[name='section_start_page'], [name='section_end_page']")) {
+                        validateSectionRows(form);
+                    }
+                });
+                form.addEventListener("change", function(event) {
+                    if (event.target.matches("[name='book']")) {
+                        defaultSectionRows(form);
+                        validateSectionRows(form);
+                    }
+                });
+                document.body.addEventListener("htmx:afterSwap", function(event) {
+                    if (event.detail.target && event.detail.target.id === "section-rows") {
+                        defaultSectionRows(form);
+                        validateSectionRows(form);
+                    }
+                });
+                form.dataset.bulkEnhanceReady = "true";
+            }
+
+            window.initSectionBulkCreate = initSectionBulkCreate;
+            document.addEventListener("DOMContentLoaded", function() {
+                initSectionBulkCreate(document);
+            });
+        })();
+    </script>
+{% endblock extra_js %}

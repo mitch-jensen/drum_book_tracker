@@ -79,3 +79,4 @@ profile = "django"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings_local"
+pythonpath = ["src"]

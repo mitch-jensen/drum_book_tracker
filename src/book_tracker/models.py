@@ -52,18 +52,26 @@ class Section(models.Model):
     book_id: uuid.UUID
     title = models.CharField(max_length=255)
     order = models.PositiveIntegerField()
+    start_page = models.PositiveIntegerField(default=1)
+    end_page = models.PositiveIntegerField(default=1)
 
     if TYPE_CHECKING:
         exercises: RelatedManager[Exercise]
 
     class Meta:  # noqa: D106
-        constraints = (models.UniqueConstraint(fields=["book", "order"], name="unique_section_order"),)
+        constraints = (
+            models.UniqueConstraint(fields=["book", "order"], name="unique_section_order"),
+            models.CheckConstraint(
+                condition=models.Q(start_page__lte=models.F("end_page")),
+                name="section_start_page_lte_end_page",
+            ),
+        )
 
     def __str__(self) -> str:
         return f"{self.book.title} - {self.title}"
 
     def __repr__(self) -> str:
-        return f"<Section(id={self.id}, title={self.title}, book={self.book.title}, order={self.order})>"
+        return f"<Section(id={self.id}, title={self.title}, book={self.book.title}, order={self.order}, pages={self.start_page}-{self.end_page})>"
 
 
 class Tag(models.Model):

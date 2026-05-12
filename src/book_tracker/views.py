@@ -11,6 +11,7 @@ from book_tracker.forms import (
     NotationUploadForm,
     PracticeLogForm,
 )
+from book_tracker.identifier_sequences import identifier_positions
 from book_tracker.models import Author, Exercise, Section
 from core.htmx import require_htmx
 
@@ -34,6 +35,11 @@ class PageRangeFormRow(NamedTuple):
     range_page: str
 
 
+class PageBounds(NamedTuple):
+    minimum: int
+    maximum: int
+
+
 class PageRangeRowParseResult(NamedTuple):
     page_range: PageRange | None
     error: str | None
@@ -44,7 +50,7 @@ class PageRangeParseSuccess(TypedDict):
 
 
 class PageLookup(TypedDict):
-    exercise_to_page: dict[int, int]
+    exercise_to_page: dict[str, int]
 
 
 class PageRangeParseFailure(TypedDict):
@@ -219,40 +225,44 @@ def exercise_upload_notation(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     return redirect("exercise-detail", pk=pk)
 
 
-def _parse_page_range_row(  # noqa: PLR0913
+def _parse_page_range_row(
     *,
     row_index: int,
-    raw_start: str,
-    raw_end: str,
-    raw_page: str,
-    exercise_start: int,
-    exercise_end: int,
+    row: PageRangeFormRow,
+    exercise_identifiers: list[str],
+    page_bounds: PageBounds,
 ) -> PageRangeRowParseResult:
+    raw_start = row.range_start
+    raw_end = row.range_end
+    raw_page = row.range_page
+
     if not raw_start or not raw_end or not raw_page:
         return PageRangeRowParseResult(page_range=None, error=f"Page range {row_index}: all fields are required.")
 
     try:
-        start_int, end_int, page_int = int(raw_start), int(raw_end), int(raw_page)
+        page_int = int(raw_page)
     except ValueError:
-        return PageRangeRowParseResult(page_range=None, error=f"Page range {row_index}: values must be integers.")
+        return PageRangeRowParseResult(page_range=None, error=f"Page range {row_index}: page number must be an integer.")
 
-    if start_int > end_int:
-        return PageRangeRowParseResult(
-            page_range=None,
-            error=f"Page range {row_index}: 'from' ({start_int}) must be ≤ 'to' ({end_int}).",
-        )
-    if start_int < exercise_start or end_int > exercise_end:
-        return PageRangeRowParseResult(
-            page_range=None,
-            error=f"Page range {row_index}: range {start_int}-{end_int} is outside exercises {exercise_start}-{exercise_end}.",
-        )
-    if page_int < 1:
-        return PageRangeRowParseResult(
-            page_range=None,
-            error=f"Page range {row_index}: page number must be positive.",
-        )
+    positions = identifier_positions(exercise_identifiers)
+    start_position = positions.get(raw_start)
+    end_position = positions.get(raw_end)
+    identifier_range_label = f"{exercise_identifiers[0]}-{exercise_identifiers[-1]}"
 
-    return PageRangeRowParseResult(page_range=PageRange(start=start_int, end=end_int, page=page_int), error=None)
+    if all(identifier.isdecimal() for identifier in exercise_identifiers) and (not raw_start.isdecimal() or not raw_end.isdecimal()):
+        error = f"Page range {row_index}: values must be integers."
+    elif start_position is None or end_position is None:
+        error = f"Page range {row_index}: range {raw_start}-{raw_end} is outside exercises {identifier_range_label}."
+    elif start_position > end_position:
+        error = f"Page range {row_index}: 'from' ({raw_start}) must be ≤ 'to' ({raw_end})."
+    elif page_int < 1:
+        error = f"Page range {row_index}: page number must be positive."
+    elif page_int < page_bounds.minimum or page_int > page_bounds.maximum:
+        error = f"Page range {row_index}: Page number must be between {page_bounds.minimum} and {page_bounds.maximum}."
+    else:
+        return PageRangeRowParseResult(page_range=PageRange(start=start_position, end=end_position, page=page_int), error=None)
+
+    return PageRangeRowParseResult(page_range=None, error=error)
 
 
 def _find_page_range_overlaps(parsed_ranges: list[PageRange]) -> list[str]:
@@ -270,23 +280,27 @@ def _find_page_range_overlaps(parsed_ranges: list[PageRange]) -> list[str]:
     return overlaps
 
 
-def _build_page_lookup(parsed_ranges: list[PageRange]) -> tuple[set[int], dict[int, int]]:
+def _build_page_lookup(parsed_ranges: list[PageRange], exercise_identifiers: list[str]) -> tuple[set[int], dict[str, int]]:
     covered: set[int] = set()
-    page_lookup: dict[int, int] = {}
+    page_lookup: dict[str, int] = {}
 
     for page_range in parsed_ranges:
-        for exercise_number in range(page_range.start, page_range.end + 1):
-            covered.add(exercise_number)
-            page_lookup[exercise_number] = page_range.page
+        for position in range(page_range.start, page_range.end + 1):
+            covered.add(position)
+            page_lookup[exercise_identifiers[position]] = page_range.page
 
     return covered, page_lookup
 
 
-def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> PageRangeParseSuccess | PageRangeParseFailure:
+def _parse_page_ranges(
+    post_data: QueryDict,
+    exercise_identifiers: list[str],
+    page_bounds: PageBounds,
+) -> PageRangeParseSuccess | PageRangeParseFailure:
     """
     Parse and validate page range rows from POST data.
 
-    Returns a dict mapping exercise number → page number on success,
+    Returns a dict mapping exercise identifier → page number on success,
     or a list of error messages on failure.
     """
     range_start = post_data.getlist("range_start")
@@ -302,11 +316,9 @@ def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> PageRangeP
     for i, (rs, re_, rp) in enumerate(zip(range_start, range_end, range_page, strict=False), 1):
         parsed_row = _parse_page_range_row(
             row_index=i,
-            raw_start=rs,
-            raw_end=re_,
-            raw_page=rp,
-            exercise_start=start,
-            exercise_end=end,
+            row=PageRangeFormRow(range_start=rs, range_end=re_, range_page=rp),
+            exercise_identifiers=exercise_identifiers,
+            page_bounds=page_bounds,
         )
         if parsed_row.error:
             errors.append(parsed_row.error)
@@ -322,13 +334,13 @@ def _parse_page_ranges(post_data: QueryDict, start: int, end: int) -> PageRangeP
     if overlap_errors:
         return {"errors": overlap_errors}
 
-    covered, page_lookup = _build_page_lookup(parsed_ranges)
+    covered, page_lookup = _build_page_lookup(parsed_ranges, exercise_identifiers)
 
-    expected = set(range(start, end + 1))
+    expected = set(range(len(exercise_identifiers)))
     missing = expected - covered
     if missing:
-        sorted_missing = sorted(missing)
-        errors.append(f"Page ranges do not cover exercises: {', '.join(str(m) for m in sorted_missing)}.")
+        missing_identifiers = [exercise_identifiers[position] for position in sorted(missing)]
+        errors.append(f"Page ranges do not cover exercises: {', '.join(missing_identifiers)}.")
         return {"errors": errors}
 
     return {"page_lookup": {"exercise_to_page": page_lookup}}
@@ -341,21 +353,20 @@ def exercise_bulk_create(request: HtmxHttpRequest) -> HttpResponse:
 
         if form.is_valid():
             section = form.cleaned_data["section"]
-            start = form.cleaned_data["start"]
-            end = form.cleaned_data["end"]
+            identifiers = form.cleaned_data["identifiers"]
             tags = form.cleaned_data["tags"]
 
-            result = _parse_page_ranges(request.POST, start, end)
+            result = _parse_page_ranges(request.POST, identifiers, PageBounds(minimum=section.start_page, maximum=section.end_page))
             if _is_page_range_parse_failure(result):
                 page_range_errors = result["errors"]
             elif _is_page_range_parse_success(result):
                 page_lookup = result["page_lookup"]["exercise_to_page"]
 
-                for n in range(start, end + 1):
+                for identifier in identifiers:
                     Exercise.objects.create(
                         section=section,
-                        identifier=str(n),
-                        page_number=page_lookup[n],
+                        identifier=identifier,
+                        page_number=page_lookup[identifier],
                     ).tags.set(tags)
 
                 return redirect("exercise-list")

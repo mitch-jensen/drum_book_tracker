@@ -58,14 +58,26 @@ class TestSectionViews:
 
         success = client.post(
             reverse("section-update", args=[section.pk]),
-            {"book": str(section.book_id), "title": "Warmups", "order": "2"},
+            {
+                "book": str(section.book_id),
+                "title": "Warmups",
+                "order": "2",
+                "start_page": str(section.start_page),
+                "end_page": str(section.end_page),
+            },
             **HTMX_HEADERS,
         )
         section.refresh_from_db()
 
         error = client.post(
             reverse("section-update", args=[section.pk]),
-            {"book": str(section.book_id), "title": "", "order": "2"},
+            {
+                "book": str(section.book_id),
+                "title": "",
+                "order": "2",
+                "start_page": str(section.start_page),
+                "end_page": str(section.end_page),
+            },
             **HTMX_HEADERS,
         )
 
@@ -78,29 +90,57 @@ class TestSectionViews:
 
 class TestSectionBulkCreate:
     def test_get_renders_bulk_create_page(self, client: Client) -> None:
+        BookFactory.create(title="Stick Control", page_count=50)
+
         response = client.get(reverse("section-bulk-create"))
 
         assert response.status_code == HTTPStatus.OK
         assert b"Bulk Create Sections" in response.content
         assert b"id_book" in response.content
+        assert b'data-page-count="50"' in response.content
         assert b"section_title" in response.content
+        assert b"section_start_page" in response.content
+        assert b"section_end_page" in response.content
         assert b"section_order" not in response.content
+        assert b"initSectionBulkCreate" in response.content
+        assert b"section-page-error" in response.content
 
     def test_creates_multiple_sections_for_one_book(self, client: Client) -> None:
-        book = BookFactory.create(title="Stick Control")
+        book = BookFactory.create(title="Stick Control", page_count=50)
 
         response = client.post(
             reverse("section-bulk-create"),
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", "Rolls", "Flams"],
+                "section_start_page": ["1", "23", "46"],
+                "section_end_page": ["22", "45", "50"],
             },
         )
 
         assert response.status_code == HTTPStatus.FOUND
         assert list(
-            Section.objects.filter(book=book).order_by("order").values_list("title", "order"),
-        ) == [("Warmups", 1), ("Rolls", 2), ("Flams", 3)]
+            Section.objects.filter(book=book).order_by("order").values_list("title", "order", "start_page", "end_page"),
+        ) == [("Warmups", 1, 1, 22), ("Rolls", 2, 23, 45), ("Flams", 3, 46, 50)]
+
+    def test_rejects_section_page_ranges_outside_book_pages_and_overlaps(self, client: Client) -> None:
+        book = BookFactory.create(title="Stick Control", page_count=50)
+
+        response = client.post(
+            reverse("section-bulk-create"),
+            {
+                "book": str(book.pk),
+                "section_title": ["Warmups", "Rolls", "Flams"],
+                "section_start_page": ["1", "22", "56"],
+                "section_end_page": ["23", "51", "99"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        content = response.content.decode()
+        assert "overlap" in content
+        assert "between 1 and 50" in content
+        assert not Section.objects.filter(book=book).exists()
 
     def test_missing_row_values_shows_error(self, client: Client) -> None:
         book = BookFactory.create(title="Stick Control")
@@ -110,6 +150,8 @@ class TestSectionBulkCreate:
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", ""],
+                "section_start_page": ["1", "2"],
+                "section_end_page": ["1", "2"],
             },
         )
 
@@ -118,14 +160,16 @@ class TestSectionBulkCreate:
         assert not Section.objects.filter(book=book).exists()
 
     def test_appends_orders_after_existing_book_sections(self, client: Client) -> None:
-        book = BookFactory.create(title="Stick Control")
-        SectionFactory.create(book=book, title="Existing", order=2)
+        book = BookFactory.create(title="Stick Control", page_count=10)
+        SectionFactory.create(book=book, title="Existing", order=2, start_page=1, end_page=1)
 
         response = client.post(
             reverse("section-bulk-create"),
             {
                 "book": str(book.pk),
                 "section_title": ["Warmups", "Rolls"],
+                "section_start_page": ["2", "3"],
+                "section_end_page": ["2", "3"],
             },
         )
 
@@ -171,6 +215,8 @@ class TestSectionFormRow:
         assert response.status_code == HTTPStatus.OK
         assert b"section-form-row" in response.content
         assert b"section_title" in response.content
+        assert b"section_start_page" in response.content
+        assert b"section_end_page" in response.content
         assert b"section_order" not in response.content
 
     def test_requires_htmx(self, client: Client) -> None:

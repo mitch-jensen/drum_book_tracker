@@ -3,7 +3,7 @@ import datetime  # noqa: INP001
 import pytest
 from django import forms
 
-from book_tracker.forms import ExerciseForm, PracticeLogForm
+from book_tracker.forms import ExerciseForm, PracticeLogForm, SectionForm
 from book_tracker.models import Book, Exercise, PracticeLog, Section
 from tests.factories import BookFactory, ExerciseFactory, PracticeLogFactory, SectionFactory
 
@@ -25,6 +25,60 @@ class TestExerciseForm:
         assert form.fields["identifier"].widget.attrs["class"] == "form-control"
         assert form.fields["description"].widget.attrs["class"] == "form-control"
         assert form.fields["page_number"].widget.attrs["class"] == "form-control"
+
+    def test_rejects_page_number_outside_section_page_range(self) -> None:
+        section: Section = SectionFactory.create(start_page=10, end_page=12)
+
+        form = ExerciseForm(
+            data={
+                "section": str(section.pk),
+                "identifier": "1",
+                "description": "",
+                "page_number": "13",
+            },
+        )
+
+        assert not form.is_valid()
+        assert form.errors["page_number"] == ["Page number must be between 10 and 12."]
+
+
+class TestSectionForm:
+    def test_rejects_page_range_outside_book_page_count(self) -> None:
+        book: Book = BookFactory.create(page_count=50)
+        section: Section = SectionFactory.create(book=book, start_page=1, end_page=10)
+
+        form = SectionForm(
+            data={
+                "book": str(book.pk),
+                "title": "Warmups",
+                "order": "1",
+                "start_page": "45",
+                "end_page": "51",
+            },
+            instance=section,
+        )
+
+        assert not form.is_valid()
+        assert "between 1 and 50" in form.non_field_errors()[0]
+
+    def test_rejects_page_range_overlapping_another_section(self) -> None:
+        book: Book = BookFactory.create(page_count=50)
+        SectionFactory.create(book=book, start_page=1, end_page=22)
+        section: Section = SectionFactory.create(book=book, start_page=23, end_page=45)
+
+        form = SectionForm(
+            data={
+                "book": str(book.pk),
+                "title": "Rolls",
+                "order": "2",
+                "start_page": "20",
+                "end_page": "45",
+            },
+            instance=section,
+        )
+
+        assert not form.is_valid()
+        assert "overlap" in form.non_field_errors()[0]
 
 
 class TestPracticeLogForm:

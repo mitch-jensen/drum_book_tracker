@@ -7,6 +7,8 @@ from django.urls import reverse
 
 from book_tracker.models import Exercise
 from book_tracker.views import (
+    PageBounds,
+    PageRangeFormRow,
     PageRangeRowParseResult,
     _parse_page_range_row,
     _parse_page_ranges,
@@ -142,17 +144,15 @@ class TestExerciseBulkCreatePageRangeTyping:
     def test_parse_page_range_row_returns_named_result(self) -> None:
         result = _parse_page_range_row(
             row_index=1,
-            raw_start="1",
-            raw_end="3",
-            raw_page="10",
-            exercise_start=1,
-            exercise_end=5,
+            row=PageRangeFormRow(range_start="1", range_end="3", range_page="10"),
+            exercise_identifiers=["1", "2", "3", "4", "5"],
+            page_bounds=PageBounds(minimum=1, maximum=20),
         )
 
         assert isinstance(result, PageRangeRowParseResult)
         assert result.page_range is not None
-        assert result.page_range.start == 1
-        assert result.page_range.end == 3
+        assert result.page_range.start == 0
+        assert result.page_range.end == 2
         assert result.page_range.page == 10
         assert result.error is None
 
@@ -164,15 +164,15 @@ class TestExerciseBulkCreatePageRangeTyping:
 
         result = _parse_page_ranges(
             post_data=post_data,
-            start=1,
-            end=3,
+            exercise_identifiers=["1", "2", "3"],
+            page_bounds=PageBounds(minimum=1, maximum=20),
         )
 
         assert isinstance(result, dict)
         assert "page_lookup" in result
         assert isinstance(result["page_lookup"], dict)
         assert "exercise_to_page" in result["page_lookup"]
-        assert result["page_lookup"]["exercise_to_page"] == {1: 10, 2: 10, 3: 10}
+        assert result["page_lookup"]["exercise_to_page"] == {"1": 10, "2": 10, "3": 10}
 
     def test_parse_page_ranges_returns_typed_error_dict(self) -> None:
         post_data = QueryDict("", mutable=True)
@@ -182,8 +182,8 @@ class TestExerciseBulkCreatePageRangeTyping:
 
         result = _parse_page_ranges(
             post_data=post_data,
-            start=1,
-            end=3,
+            exercise_identifiers=["1", "2", "3"],
+            page_bounds=PageBounds(minimum=1, maximum=20),
         )
 
         assert isinstance(result, dict)
