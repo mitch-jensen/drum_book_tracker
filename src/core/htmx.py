@@ -13,11 +13,11 @@ class HtmxHttpRequest(HttpRequest):
     htmx: HtmxDetails
 
 
-def require_htmx(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
-    @functools.wraps(view)
-    def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        if not request.htmx:  # type: ignore[union-attr]
+def require_htmx(view_func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+    @functools.wraps(view_func)
+    def wrapped(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
+        if not getattr(request, "htmx", False):
             return HttpResponseBadRequest()
-        return view(request, *args, **kwargs)
+        return view_func(request, *args, **kwargs)
 
-    return wrapper
+    return wrapped

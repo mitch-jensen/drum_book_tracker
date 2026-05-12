@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import functools
 from http import HTTPStatus
 from typing import TYPE_CHECKING, NamedTuple
 
 from django.db import transaction
 from django.db.models import IntegerField, Max, Prefetch, QuerySet
 from django.db.models.functions import Cast
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -22,10 +21,9 @@ from book_tracker.forms import (
     TagForm,
 )
 from book_tracker.models import Book, Exercise, PracticeLog, Section, Tag
+from core.htmx import require_htmx
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from core.htmx import HtmxHttpRequest
 
 require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
@@ -33,16 +31,6 @@ require_DELETE = require_http_methods(["DELETE"])  # noqa: N816
 
 class SectionFormRow(NamedTuple):
     section_title: str
-
-
-def require_htmx(view_func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
-    @functools.wraps(view_func)
-    def wrapped(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        if not getattr(request, "htmx", False):
-            return HttpResponseBadRequest()
-        return view_func(request, *args, **kwargs)
-
-    return wrapped
 
 
 def get_tags() -> QuerySet[Tag]:
