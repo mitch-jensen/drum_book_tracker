@@ -33,7 +33,7 @@ Core stack:
    - `uv run python src/manage.py runserver`
 
 Notes:
-- Tests use `core.settings_local_test` and SQLite test DB (`src/db_test.sqlite3`) by default.
+- Tests use `core.settings_local` and SQLite test DB (`src/db_test.sqlite3`) by default.
 - Local uv/pytest is the default execution path for daily development.
 
 ## Execution Policy (Critical)

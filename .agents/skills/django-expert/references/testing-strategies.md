@@ -126,26 +126,26 @@ python_files = ["test_*.py", "*_test.py"]
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run specific file
-pytest tests/test_models.py
+uv run pytest tests/test_models.py
 
 # Run specific test
-pytest tests/test_models.py::test_create_post
+uv run pytest tests/test_models.py::test_create_post
 
 # Verbose output
-pytest -v
+uv run pytest -v
 
 # Parallel execution (requires pytest-xdist)
 pip install pytest-xdist
-pytest -n auto
+uv run pytest -n auto
 
 # Reuse database between runs (faster)
-pytest --reuse-db
+uv run pytest --reuse-db
 
 # Skip migrations (much faster for large projects)
-pytest --reuse-db --no-migrations
+uv run pytest --reuse-db --no-migrations
 ```
 
 ### Key pytest-django Fixtures
@@ -210,7 +210,7 @@ class PostModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',
-            password='testpass123'
+            password='testpass123'  # pragma: allowlist secret
         )
 
     def test_create_post(self):
@@ -273,7 +273,7 @@ def test_create_post(django_user_model):
     """Test post creation."""
     user = django_user_model.objects.create_user(
         username='testuser',
-        password='testpass123'
+        password='testpass123' # pragma: allowlist secret
     )
     post = Post.objects.create(
         title='Test Post',
@@ -337,7 +337,7 @@ def test_user(db):
     """Create a test user."""
     return User.objects.create_user(
         username='testuser',
-        password='testpass123'
+        password='testpass123' # pragma: allowlist secret
     )
 
 
@@ -388,7 +388,7 @@ class PostViewTest(TestCase):
         self.client = Client()
         self.user = User.objects.create_user(
             username='testuser',
-            password='testpass123'
+            password='testpass123' # pragma: allowlist secret
         )
         self.post = Post.objects.create(
             title='Test Post',
@@ -421,7 +421,7 @@ class PostViewTest(TestCase):
 
     def test_create_post_authenticated(self):
         """Test creating post when logged in."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username='testuser', password='testpass123') # pragma: allowlist secret
 
         data = {
             'title': 'New Post',
@@ -446,7 +446,7 @@ class PostViewTest(TestCase):
 
     def test_update_own_post(self):
         """Test updating own post."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username='testuser', password='testpass123') # pragma: allowlist secret
 
         url = reverse('post_update', kwargs={'pk': self.post.pk})
         data = {'title': 'Updated Title', 'content': 'Updated content'}
@@ -459,7 +459,7 @@ class PostViewTest(TestCase):
     def test_cannot_update_others_post(self):
         """Test cannot update another user's post."""
         other_user = User.objects.create_user(username='other', password='pass')
-        self.client.login(username='other', password='pass')
+        self.client.login(username='other', password='pass') # pragma: allowlist secret
 
         url = reverse('post_update', kwargs={'pk': self.post.pk})
         data = {'title': 'Hacked', 'content': 'Hacked'}
@@ -472,7 +472,7 @@ class PostViewTest(TestCase):
 
     def test_delete_post(self):
         """Test deleting post."""
-        self.client.login(username='testuser', password='testpass123')
+        self.client.login(username='testuser', password='testpass123') # pragma: allowlist secret
 
         url = reverse('post_delete', kwargs={'pk': self.post.pk})
         response = self.client.post(url)
@@ -604,7 +604,7 @@ class PostAPITest(APITestCase):
         self.client = APIClient()
         self.user = User.objects.create_user(
             username='testuser',
-            password='testpass123'
+            password='testpass123' # pragma: allowlist secret
         )
         self.post = Post.objects.create(
             title='Test Post',
@@ -1008,7 +1008,7 @@ class PaymentTest(TestCase):
         user = User.objects.create_user(
             username='test',
             email='test@example.com',
-            password='pass'
+            password='pass' # pragma: allowlist secret
         )
 
         # Verify email task was called
@@ -1057,7 +1057,7 @@ def test_user_registration_sends_email(mock_send_email):
     user = User.objects.create_user(
         username='test',
         email='test@example.com',
-        password='pass'
+        password='pass' # pragma: allowlist secret
     )
 
     # Verify email task was called
@@ -1443,7 +1443,7 @@ pytest can run Django TestCase tests, so you can gradually migrate or use both s
 
 ```bash
 # pytest runs both styles
-pytest  # Runs both TestCase classes and pytest functions
+uv run pytest  # Runs both TestCase classes and pytest functions
 ```
 
 ---
@@ -1503,12 +1503,12 @@ def test_something(user):
 python manage.py test
 
 # pytest-django
-pytest
-pytest --reuse-db --no-migrations  # Faster
-pytest -n auto  # Parallel
-pytest -v  # Verbose
-pytest -k "test_user"  # Run matching tests
-pytest tests/test_models.py::test_create_user  # Specific test
+uv run pytest
+uv run pytest --reuse-db --no-migrations  # Faster
+uv run pytest -n auto  # Parallel
+uv run pytest -v  # Verbose
+uv run pytest -k "test_user"  # Run matching tests
+uv run pytest tests/test_models.py::test_create_user  # Specific test
 ```
 
 ---
