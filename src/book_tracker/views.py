@@ -1,23 +1,17 @@
 from typing import TYPE_CHECKING, NamedTuple, TypedDict, TypeGuard
 
-from django.db.models import Avg, Count, IntegerField, Max, Min, Q, QuerySet
-from django.db.models.functions import Cast
+from django.db.models import Avg, Count, Max, Min, Q, QuerySet
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from book_tracker.bulk_forms import build_form_rows
 from book_tracker.forms import (
     AuthorForm,
-    BookForm,
     BulkExerciseCreateForm,
-    ExerciseForm,
-    ExerciseTagFilterForm,
     NotationUploadForm,
     PracticeLogForm,
-    SectionForm,
-    TagForm,
 )
-from book_tracker.models import Author, Book, Exercise, PracticeLog, Section, Tag
+from book_tracker.models import Author, Exercise, Section
 from core.htmx import require_htmx
 
 if TYPE_CHECKING:
@@ -188,277 +182,7 @@ def author_delete(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     )
 
 
-# --- Tag views ---
-
-
-@require_GET
-def tag_list(request: HtmxHttpRequest) -> HttpResponse:
-    tags = Tag.objects.order_by("name")
-    form = TagForm()
-    return render(request, "book_tracker/tags/list.html", {"tags": tags, "form": form})
-
-
-@require_POST
-@require_htmx
-def tag_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = TagForm(request.POST)
-    if form.is_valid():
-        form.save()
-        tags = Tag.objects.order_by("name")
-        response = render(
-            request,
-            "book_tracker/tags/_list.html",
-            {"tags": tags, "form": TagForm()},
-        )
-        response["HX-Retarget"] = "#tag-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-    return render(request, "book_tracker/tags/_form.html", {"form": form})
-
-
-@require_GET
-@require_htmx
-def tag_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    tag = get_object_or_404(Tag, pk=pk)
-    return render(request, "book_tracker/tags/_row.html", {"tag": tag})
-
-
-@require_GET
-@require_htmx
-def tag_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    tag = get_object_or_404(Tag, pk=pk)
-    form = TagForm(instance=tag)
-    return render(request, "book_tracker/tags/_edit_row.html", {"tag": tag, "form": form})
-
-
-@require_POST
-@require_htmx
-def tag_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    tag = get_object_or_404(Tag, pk=pk)
-    form = TagForm(request.POST, instance=tag)
-    if form.is_valid():
-        form.save()
-        return render(request, "book_tracker/tags/_row.html", {"tag": tag})
-    return render(request, "book_tracker/tags/_edit_row.html", {"tag": tag, "form": form})
-
-
-# --- Book views ---
-
-
-@require_GET
-def book_list(request: HtmxHttpRequest) -> HttpResponse:
-    books = Book.objects.prefetch_related("authors").order_by("title")
-    form = BookForm()
-    return render(request, "book_tracker/books/list.html", {"books": books, "form": form})
-
-
-@require_POST
-@require_htmx
-def book_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = BookForm(request.POST)
-    if form.is_valid():
-        form.save()
-        books = Book.objects.prefetch_related("authors").order_by("title")
-        response = render(
-            request,
-            "book_tracker/books/_list.html",
-            {"books": books, "form": BookForm()},
-        )
-        response["HX-Retarget"] = "#book-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-    return render(request, "book_tracker/books/_form.html", {"form": form})
-
-
-@require_GET
-@require_htmx
-def book_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    book = get_object_or_404(Book.objects.prefetch_related("authors"), pk=pk)
-    return render(request, "book_tracker/books/_row.html", {"book": book})
-
-
-@require_GET
-@require_htmx
-def book_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    book = get_object_or_404(Book, pk=pk)
-    form = BookForm(instance=book)
-    return render(request, "book_tracker/books/_edit_row.html", {"book": book, "form": form})
-
-
-@require_POST
-@require_htmx
-def book_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    book = get_object_or_404(Book, pk=pk)
-    form = BookForm(request.POST, instance=book)
-    if form.is_valid():
-        form.save()
-        book = Book.objects.prefetch_related("authors").get(pk=pk)
-        return render(request, "book_tracker/books/_row.html", {"book": book})
-    return render(request, "book_tracker/books/_edit_row.html", {"book": book, "form": form})
-
-
-# --- Section views ---
-
-
-@require_GET
-def section_list(request: HtmxHttpRequest) -> HttpResponse:
-    sections = Section.objects.select_related("book").order_by("book__title", "order")
-    form = SectionForm()
-    return render(request, "book_tracker/sections/list.html", {"sections": sections, "form": form})
-
-
-@require_POST
-@require_htmx
-def section_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = SectionForm(request.POST)
-    if form.is_valid():
-        form.save()
-        sections = Section.objects.select_related("book").order_by("book__title", "order")
-        response = render(
-            request,
-            "book_tracker/sections/_list.html",
-            {"sections": sections, "form": SectionForm()},
-        )
-        response["HX-Retarget"] = "#section-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-    return render(request, "book_tracker/sections/_form.html", {"form": form})
-
-
-@require_GET
-@require_htmx
-def section_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    section = get_object_or_404(Section.objects.select_related("book"), pk=pk)
-    return render(request, "book_tracker/sections/_row.html", {"section": section})
-
-
-@require_GET
-@require_htmx
-def section_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    section = get_object_or_404(Section, pk=pk)
-    form = SectionForm(instance=section)
-    return render(request, "book_tracker/sections/_edit_row.html", {"section": section, "form": form})
-
-
-@require_POST
-@require_htmx
-def section_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    section = get_object_or_404(Section, pk=pk)
-    form = SectionForm(request.POST, instance=section)
-    if form.is_valid():
-        form.save()
-        section = Section.objects.select_related("book").get(pk=pk)
-        return render(request, "book_tracker/sections/_row.html", {"section": section})
-    return render(request, "book_tracker/sections/_edit_row.html", {"section": section, "form": form})
-
-
 # --- Exercise views ---
-
-
-@require_GET
-def exercise_list(request: HtmxHttpRequest) -> HttpResponse:
-    filter_form = ExerciseTagFilterForm(request.GET or None)
-
-    exercises_qs = Exercise.objects.select_related("section__book").prefetch_related("tags")
-    # Smart sort: numeric if all identifiers are numeric, else lexicographic
-    identifiers = exercises_qs.values_list("identifier", flat=True)
-
-    def _is_numeric(s: str) -> bool:
-        return s.isdigit()
-
-    all_numeric = all(_is_numeric(i) for i in identifiers if i)
-    if all_numeric:
-        exercises = exercises_qs.order_by(
-            "section__book__title",
-            "section__order",
-            Cast("identifier", IntegerField()),
-        )
-    else:
-        exercises = exercises_qs.order_by(
-            "section__book__title",
-            "section__order",
-            "identifier",
-        )
-
-    if filter_form.is_valid() and filter_form.cleaned_data["tags"]:
-        exercises = exercises.filter(tags__in=filter_form.cleaned_data["tags"]).distinct()
-
-    form = ExerciseForm()
-    return render(
-        request,
-        "book_tracker/exercises/list.html",
-        {"exercises": exercises, "form": form, "filter_form": filter_form},
-    )
-
-
-@require_POST
-@require_htmx
-def exercise_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = ExerciseForm(request.POST)
-    if form.is_valid():
-        form.save()
-        exercises_qs = Exercise.objects.select_related("section__book").prefetch_related("tags")
-        identifiers = exercises_qs.values_list("identifier", flat=True)
-
-        def _is_numeric(s: str) -> bool:
-            return s.isdigit()
-
-        all_numeric = all(_is_numeric(i) for i in identifiers if i)
-        if all_numeric:
-            exercises = exercises_qs.order_by(
-                "section__book__title",
-                "section__order",
-                Cast("identifier", IntegerField()),
-            )
-        else:
-            exercises = exercises_qs.order_by(
-                "section__book__title",
-                "section__order",
-                "identifier",
-            )
-        response = render(
-            request,
-            "book_tracker/exercises/_list.html",
-            {"exercises": exercises, "form": ExerciseForm(), "filter_form": ExerciseTagFilterForm()},
-        )
-        response["HX-Retarget"] = "#exercise-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        return response
-    return render(
-        request,
-        "book_tracker/exercises/_form.html",
-        {"form": form},
-    )
-
-
-@require_GET
-@require_htmx
-def exercise_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    exercise = get_object_or_404(
-        Exercise.objects.select_related("section__book").prefetch_related("tags"),
-        pk=pk,
-    )
-    return render(request, "book_tracker/exercises/_row.html", {"exercise": exercise})
-
-
-@require_GET
-@require_htmx
-def exercise_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    exercise = get_object_or_404(Exercise, pk=pk)
-    form = ExerciseForm(instance=exercise)
-    return render(request, "book_tracker/exercises/_edit_row.html", {"exercise": exercise, "form": form})
-
-
-@require_POST
-@require_htmx
-def exercise_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    exercise = get_object_or_404(Exercise, pk=pk)
-    form = ExerciseForm(request.POST, instance=exercise)
-    if form.is_valid():
-        form.save()
-        exercise = Exercise.objects.select_related("section__book").prefetch_related("tags").get(pk=pk)
-        return render(request, "book_tracker/exercises/_row.html", {"exercise": exercise})
-    return render(request, "book_tracker/exercises/_edit_row.html", {"exercise": exercise, "form": form})
 
 
 @require_GET
@@ -664,7 +388,7 @@ def page_range_row(request: HtmxHttpRequest) -> HttpResponse:
     return render(request, "book_tracker/exercises/_page_range_row.html")
 
 
-# --- PracticeLog views ---
+# --- Practice log support views ---
 
 
 @require_GET
@@ -705,91 +429,6 @@ def exercise_options(request: HtmxHttpRequest) -> HttpResponse:
     return render(request, "book_tracker/logs/_exercise_options.html", {"exercises": exercises})
 
 
-@require_GET
-def practice_log_list(request: HtmxHttpRequest) -> HttpResponse:
-    logs = PracticeLog.objects.select_related("exercise__section__book").order_by("-practiced_on", "-pk")
-    form = PracticeLogForm()
-    return render(request, "book_tracker/logs/list.html", {"logs": logs, "form": form})
-
-
-@require_POST
-@require_htmx
-def practice_log_create(request: HtmxHttpRequest) -> HttpResponse:
-    form = PracticeLogForm(request.POST)
-    if form.is_valid():
-        form.save()
-        logs = PracticeLog.objects.select_related("exercise__section__book").order_by("-practiced_on", "-pk")
-        response = render(
-            request,
-            "book_tracker/logs/_list.html",
-            {"logs": logs, "form": PracticeLogForm()},
-        )
-        response["HX-Retarget"] = "#log-list-container"
-        response["HX-Reswap"] = "innerHTML"
-        response["HX-Trigger"] = "logCreated"
-        return response
-    return render(request, "book_tracker/logs/_form.html", {"form": form})
-
-
-@require_GET
-@require_htmx
-def practice_log_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    log = get_object_or_404(PracticeLog.objects.select_related("exercise__section__book"), pk=pk)
-    return render(request, "book_tracker/logs/_row.html", {"log": log})
-
-
-@require_GET
-@require_htmx
-def practice_log_edit(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    log = get_object_or_404(PracticeLog, pk=pk)
-    form = PracticeLogForm(instance=log)
-    form.fields["exercise"].widget.attrs["id"] = f"edit-exercise-{log.id}"
-    books = Book.objects.order_by("title")
-    current_book_id = log.exercise.section.book_id
-    current_section_id = log.exercise.section_id
-    sections = Section.objects.filter(book_id=current_book_id).order_by("order")
-    return render(
-        request,
-        "book_tracker/logs/_edit_row.html",
-        {
-            "log": log,
-            "form": form,
-            "books": books,
-            "sections": sections,
-            "current_book_id": current_book_id,
-            "current_section_id": current_section_id,
-        },
-    )
-
-
-@require_POST
-@require_htmx
-def practice_log_update(request: HtmxHttpRequest, pk: str) -> HttpResponse:
-    log = get_object_or_404(PracticeLog, pk=pk)
-    form = PracticeLogForm(request.POST, instance=log)
-    if form.is_valid():
-        log = form.save()
-        log = PracticeLog.objects.select_related("exercise__section__book").get(pk=log.pk)
-        return render(request, "book_tracker/logs/_row.html", {"log": log})
-    books = Book.objects.order_by("title")
-    book_id = request.POST.get("book") or log.exercise.section.book_id
-    current_section_id = request.POST.get("section") or log.exercise.section_id
-    sections = Section.objects.filter(book_id=book_id).order_by("order")
-    form.fields["exercise"].widget.attrs["id"] = f"edit-exercise-{log.id}"
-    return render(
-        request,
-        "book_tracker/logs/_edit_row.html",
-        {
-            "log": log,
-            "form": form,
-            "books": books,
-            "sections": sections,
-            "current_book_id": book_id,
-            "current_section_id": current_section_id,
-        },
-    )
-
-
 @require_POST
 @require_htmx
 def exercise_quick_log(request: HtmxHttpRequest, pk: str) -> HttpResponse:
@@ -802,5 +441,5 @@ def exercise_quick_log(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     form = PracticeLogForm(data)
     if form.is_valid():
         form.save()
-        return render(request, "book_tracker/logs/_form.html", {"form": PracticeLogForm()})
-    return render(request, "book_tracker/logs/_form.html", {"form": form})
+        form = PracticeLogForm()
+    return render(request, "book_tracker/exercises/_quick_log_form.html", {"exercise": exercise, "form": form})
