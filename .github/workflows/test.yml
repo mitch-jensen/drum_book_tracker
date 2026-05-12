@@ -37,7 +37,7 @@ jobs:
         run: uv sync --locked --all-extras --all-groups
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run pytest src/
         env:
           SECRET_KEY: "ci-dummy-key"  # pragma: allowlist secret
           DATABASE_NAME: "drum_book_tracker"
