@@ -1,0 +1,21 @@
+<tr id="exercise-{{ exercise.id }}" class="table-warning">
+    <td colspan="6">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>
+                Delete <strong>{{ exercise }}</strong>?
+            </span>
+            <div class="d-flex gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-secondary"
+                        hx-get="{% url 'exercise-row' exercise.id %}"
+                        hx-target="#exercise-{{ exercise.id }}"
+                        hx-swap="outerHTML">Cancel</button>
+                <button type="button"
+                        class="btn btn-sm btn-danger"
+                        hx-delete="{% url 'exercise-delete' exercise.id %}"
+                        hx-target="#exercise-table-body"
+                        hx-swap="innerHTML">Confirm Delete</button>
+            </div>
+        </div>
+    </td>
+</tr>

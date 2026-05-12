@@ -1,0 +1,28 @@
+<div class="row g-2 align-items-start mb-2 section-form-row">
+    <div class="col-md-6">
+        <input type="text"
+               name="section_title"
+               value="{{ section_title }}"
+               class="form-control"
+               placeholder="Section title">
+    </div>
+    <div class="col-md-3">
+        <input type="number"
+               name="section_start_page"
+               value="{{ section_start_page }}"
+               class="form-control"
+               min="1"
+               placeholder="Start page">
+    </div>
+    <div class="col-md-3">
+        <input type="number"
+               name="section_end_page"
+               value="{{ section_end_page }}"
+               class="form-control"
+               min="1"
+               placeholder="End page">
+    </div>
+    <div class="col-12">
+        <div class="invalid-feedback d-block section-page-error"></div>
+    </div>
+</div>

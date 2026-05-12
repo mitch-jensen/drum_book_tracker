@@ -1,0 +1,34 @@
+<div id="section-{{ section.id }}" class="list-group-item">
+    <input type="hidden" name="section" value="{{ section.id }}">
+    <form hx-post="{% url 'section-update' section.id %}"
+          hx-target="#section-table-body"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type='submit']">
+        {% csrf_token %}
+        {{ form.book.as_hidden }}
+        {{ form.order.as_hidden }}
+        <div class="row g-2 align-items-start">
+            <div class="col-md-5">
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
+            <div class="col-md-2">
+                {{ form.start_page }}
+                {{ form.start_page.errors }}
+            </div>
+            <div class="col-md-2">
+                {{ form.end_page }}
+                {{ form.end_page.errors }}
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                <button type="button"
+                        class="btn btn-sm btn-secondary"
+                        hx-get="{% url 'section-row' section.id %}"
+                        hx-target="#section-{{ section.id }}"
+                        hx-swap="outerHTML">Cancel</button>
+            </div>
+        </div>
+        {{ form.non_field_errors }}
+    </form>
+</div>

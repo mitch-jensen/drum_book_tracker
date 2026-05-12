@@ -9,9 +9,15 @@
     <td>{{ log.get_relaxation_level_display }}</td>
     <td>{{ log.notes|truncatewords:10|default:"—" }}</td>
     <td class="text-end">
-        <button class="btn btn-sm btn-outline-primary"
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
                 hx-get="{% url 'log-edit' log.id %}"
                 hx-target="#log-{{ log.id }}"
                 hx-swap="outerHTML">Edit</button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-get="{% url 'log-confirm-delete' log.id %}"
+                hx-target="#log-{{ log.id }}"
+                hx-swap="outerHTML">Delete</button>
     </td>
 </tr>

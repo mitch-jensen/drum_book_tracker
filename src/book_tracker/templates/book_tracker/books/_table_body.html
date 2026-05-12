@@ -1,0 +1,9 @@
+{% if books %}
+    {% for book in books %}
+        {% include "book_tracker/books/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-books-row">
+        <td colspan="4" class="text-center text-muted py-4">No books yet.</td>
+    </tr>
+{% endif %}

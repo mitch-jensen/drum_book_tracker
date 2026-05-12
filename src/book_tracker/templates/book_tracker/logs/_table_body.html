@@ -1,0 +1,9 @@
+{% if logs %}
+    {% for log in logs %}
+        {% include "book_tracker/logs/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-logs-row">
+        <td colspan="10" class="text-center text-muted py-4">No log entries yet.</td>
+    </tr>
+{% endif %}

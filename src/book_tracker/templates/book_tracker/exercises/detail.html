@@ -3,6 +3,14 @@
     {{ exercise }} | {{ block.super }}
 {% endblock title %}
 {% block content %}
+    <div id="quick-log-container" class="mb-4">
+        <button id="quick-log-btn"
+                class="btn btn-success mb-2"
+                onclick="document.getElementById('quick-log-form').classList.toggle('d-none'); return false;">
+            Quick Log
+        </button>
+        <div id="quick-log-form" class="d-none">{% include "book_tracker/exercises/_quick_log_form.html" %}</div>
+    </div>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">

@@ -1,4 +1,5 @@
 from http import HTTPStatus  # noqa: INP001
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.django_db
 
 HTMX_HEADERS = {"HTTP_HX-Request": "true"}
+TEMPLATE_ROOT = Path("src/book_tracker/templates/book_tracker")
 
 
 def _template_names(response: object) -> set[str]:
@@ -59,8 +61,8 @@ def test_author_create_validation_error_uses_authors_form_partial(client: Client
         **HTMX_HEADERS,
     )
 
-    assert response.status_code == HTTPStatus.OK
-    assert "book_tracker/authors/_form.html" in _template_names(response)
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert "book_tracker/authors/_create_form.html" in _template_names(response)
 
 
 def test_book_row_uses_books_row_partial(client: Client, book: Book) -> None:
@@ -97,3 +99,25 @@ def test_page_range_row_uses_exercises_page_range_partial(client: Client) -> Non
 
     assert response.status_code == HTTPStatus.OK
     assert "book_tracker/exercises/_page_range_row.html" in _template_names(response)
+
+
+def test_crud_templates_use_current_partial_names() -> None:
+    stale_partials = [path for path in TEMPLATE_ROOT.glob("*/*.html") if path.name in {"_edit_row.html", "_form.html"}]
+
+    assert stale_partials == []
+
+
+@pytest.mark.parametrize(
+    "template_path",
+    [
+        TEMPLATE_ROOT / "authors/_create_form.html",
+        TEMPLATE_ROOT / "books/_create_form.html",
+        TEMPLATE_ROOT / "exercises/_create_form.html",
+        TEMPLATE_ROOT / "logs/_create_form.html",
+        TEMPLATE_ROOT / "tags/_create_form.html",
+    ],
+)
+def test_create_form_submit_buttons_align_with_fields(template_path: Path) -> None:
+    template = template_path.read_text()
+
+    assert "col-auto align-self-end" in template

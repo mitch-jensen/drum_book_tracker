@@ -27,18 +27,32 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="{{ form.section.id_for_label }}" class="form-label">Section</label>
-                {{ form.section }}
+                {% with selected_section=form.section.value|stringformat:"s" %}
+                    <select name="{{ form.section.html_name }}"
+                            id="{{ form.section.id_for_label }}"
+                            class="form-select">
+                        <option value="">---------</option>
+                        {% for section in form.section.field.queryset %}
+                            <option value="{{ section.pk }}"
+                                    data-start-page="{{ section.start_page }}"
+                                    data-end-page="{{ section.end_page }}"
+                                    {% if selected_section == section.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ section.book.title }} - {{ section.title }} (pp. {{ section.start_page }}-{{ section.end_page }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                {% endwith %}
                 {% if form.section.errors %}<div class="invalid-feedback d-block">{{ form.section.errors.0 }}</div>{% endif %}
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-3">
-                <label for="{{ form.start.id_for_label }}" class="form-label">Start Exercise #</label>
+                <label for="{{ form.start.id_for_label }}" class="form-label">Start Identifier</label>
                 {{ form.start }}
                 {% if form.start.errors %}<div class="invalid-feedback d-block">{{ form.start.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-3">
-                <label for="{{ form.end.id_for_label }}" class="form-label">End Exercise #</label>
+                <label for="{{ form.end.id_for_label }}" class="form-label">End Identifier</label>
                 {{ form.end }}
                 {% if form.end.errors %}<div class="invalid-feedback d-block">{{ form.end.errors.0 }}</div>{% endif %}
             </div>
@@ -69,3 +83,107 @@
         </div>
     </form>
 {% endblock content %}
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        (function() {
+            function selectedSectionBounds(form) {
+                var section = form.querySelector("[name='section']");
+                var option = section && section.options[section.selectedIndex];
+                return {
+                    start: option ? parseInt(option.dataset.startPage || "", 10) : NaN,
+                    end: option ? parseInt(option.dataset.endPage || "", 10) : NaN
+                };
+            }
+
+            function incrementIdentifier(value) {
+                var numericValue = parseInt(value || "", 10);
+                if (!Number.isNaN(numericValue) && String(numericValue) === String(value).trim()) {
+                    return String(numericValue + 1);
+                }
+                return "";
+            }
+
+            function setRangeInvalid(row, message) {
+                row.querySelectorAll("input").forEach(function(input) {
+                    input.classList.toggle("is-invalid", Boolean(message));
+                });
+                row.querySelector(".exercise-page-range-error").textContent = message || "";
+            }
+
+            function defaultExerciseRows(form) {
+                var bounds = selectedSectionBounds(form);
+                var rows = Array.prototype.slice.call(form.querySelectorAll(".page-range-row"));
+                rows.forEach(function(row, index) {
+                    var rangeStart = row.querySelector("[name='range_start']");
+                    var rangeEnd = row.querySelector("[name='range_end']");
+                    var page = row.querySelector("[name='range_page']");
+                    if (index > 0 && !rangeStart.value) {
+                        rangeStart.value = incrementIdentifier(rows[index - 1].querySelector("[name='range_end']").value);
+                    }
+                    if (!rangeEnd.value && rangeStart.value) {
+                        rangeEnd.value = rangeStart.value;
+                    }
+                    if (index === 0 && !page.value && !Number.isNaN(bounds.start)) {
+                        page.value = String(bounds.start);
+                    } else if (index > 0 && !page.value) {
+                        var previousPage = parseInt(rows[index - 1].querySelector("[name='range_page']").value || "", 10);
+                        if (!Number.isNaN(previousPage)) {
+                            page.value = String(previousPage + 1);
+                        }
+                    }
+                });
+            }
+
+            function validateExerciseRows(form) {
+                var bounds = selectedSectionBounds(form);
+                form.querySelectorAll(".page-range-row").forEach(function(row) {
+                    var page = row.querySelector("[name='range_page']");
+                    var pageValue = parseInt(page.value || "", 10);
+                    var message = "";
+                    if (!Number.isNaN(bounds.start) && !Number.isNaN(bounds.end) && !Number.isNaN(pageValue)) {
+                        if (pageValue < bounds.start || pageValue > bounds.end) {
+                            message = "Page must be between " + bounds.start + " and " + bounds.end + ".";
+                        }
+                    }
+                    setRangeInvalid(row, message);
+                });
+            }
+
+            function initExerciseBulkCreate(root) {
+                var form = (root || document).querySelector("form");
+                if (!form || !form.querySelector("#page-ranges")) {
+                    return;
+                }
+                defaultExerciseRows(form);
+                validateExerciseRows(form);
+                if (form.dataset.bulkEnhanceReady === "true") {
+                    return;
+                }
+                form.addEventListener("input", function(event) {
+                    if (event.target.matches("[name='range_page']")) {
+                        validateExerciseRows(form);
+                    }
+                });
+                form.addEventListener("change", function(event) {
+                    if (event.target.matches("[name='section']")) {
+                        defaultExerciseRows(form);
+                        validateExerciseRows(form);
+                    }
+                });
+                document.body.addEventListener("htmx:afterSwap", function(event) {
+                    if (event.detail.target && event.detail.target.id === "page-ranges") {
+                        defaultExerciseRows(form);
+                        validateExerciseRows(form);
+                    }
+                });
+                form.dataset.bulkEnhanceReady = "true";
+            }
+
+            window.initExerciseBulkCreate = initExerciseBulkCreate;
+            document.addEventListener("DOMContentLoaded", function() {
+                initExerciseBulkCreate(document);
+            });
+        })();
+    </script>
+{% endblock extra_js %}

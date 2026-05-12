@@ -1,0 +1,86 @@
+<tr id="log-{{ log.id }}">
+    <td colspan="10">
+        <form hx-post="{% url 'log-update' log.id %}"
+              hx-target="#log-table-body"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type='submit']">
+            {% csrf_token %}
+            <div class="row g-2 align-items-start">
+                <div class="col">
+                    <select name="book"
+                            class="form-select"
+                            hx-get="{% url 'section-options' %}?exercise_target=edit-exercise-{{ log.id }}"
+                            hx-target="#edit-section-{{ log.id }}"
+                            hx-include="closest tr"
+                            hx-trigger="change">
+                        <option value="">---------</option>
+                        {% for book in books %}
+                            <option value="{{ book.pk }}"
+                                    {% if book.pk == current_book_id %}selected{% endif %}>{{ book.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col">
+                    <select name="section"
+                            id="edit-section-{{ log.id }}"
+                            class="form-select"
+                            hx-get="{% url 'exercise-options' %}"
+                            hx-target="#edit-exercise-{{ log.id }}"
+                            hx-include="closest tr"
+                            hx-trigger="change">
+                        <option value="">---------</option>
+                        {% for section in sections %}
+                            <option value="{{ section.pk }}"
+                                    {% if section.pk == current_section_id %}selected{% endif %}>{{ section }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col">
+                    <input type="number"
+                           name="page_number"
+                           value="{{ form.page_number.value|default_if_none:'' }}"
+                           min="1"
+                           class="form-control"
+                           hx-get="{% url 'exercise-options' %}"
+                           hx-target="#edit-exercise-{{ log.id }}"
+                           hx-include="closest tr"
+                           hx-trigger="change"
+                           placeholder="Page #">
+                    {{ form.page_number.errors }}
+                </div>
+                <div class="col">
+                    {{ form.exercise }}
+                    {{ form.exercise.errors }}
+                </div>
+                <div class="col">
+                    {{ form.practiced_on }}
+                    {{ form.practiced_on.errors }}
+                </div>
+                <div class="col">
+                    {{ form.tempo }}
+                    {{ form.tempo.errors }}
+                </div>
+                <div class="col">
+                    {{ form.difficulty }}
+                    {{ form.difficulty.errors }}
+                </div>
+                <div class="col">
+                    {{ form.relaxation_level }}
+                    {{ form.relaxation_level.errors }}
+                </div>
+                <div class="col">
+                    {{ form.notes }}
+                    {{ form.notes.errors }}
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-get="{% url 'log-row' log.id %}"
+                            hx-target="#log-{{ log.id }}"
+                            hx-swap="outerHTML">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </td>
+</tr>

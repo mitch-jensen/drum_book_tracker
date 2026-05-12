@@ -23,7 +23,7 @@ class BookFactory(DjangoModelFactory[Book]):
     page_count = factory.Faker("random_int", min=50, max=500)
 
     @factory.post_generation
-    def authors(self: Book, create: bool, extracted: list[Author] | None, **kwargs: object) -> None:
+    def authors(self: Book, create: bool, extracted: list[Author] | None, **kwargs: object) -> None:  # pyrefly: ignore[invalid-annotation]
         if not create:
             return
         if extracted:
@@ -37,6 +37,8 @@ class SectionFactory(DjangoModelFactory[Section]):
     book = factory.SubFactory(BookFactory)
     title = factory.LazyAttribute(lambda o: f"Section {o.order}")
     order = factory.Sequence(lambda n: n + 1)
+    start_page = 1
+    end_page = factory.LazyAttribute(lambda o: o.book.page_count)
 
 
 class TagFactory(DjangoModelFactory[Tag]):
@@ -55,7 +57,7 @@ class ExerciseFactory(DjangoModelFactory[Exercise]):
     identifier = factory.Sequence(lambda n: str(n + 1))
 
     @factory.post_generation
-    def tags(self: Exercise, create: bool, extracted: list[Tag] | None, **kwargs: object) -> None:
+    def tags(self: Exercise, create: bool, extracted: list[Tag] | None, **kwargs: object) -> None:  # pyrefly: ignore[invalid-annotation]
         if not create:
             return
         if extracted:

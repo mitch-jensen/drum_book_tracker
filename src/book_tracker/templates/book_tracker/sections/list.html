@@ -6,3 +6,51 @@
     <h1 class="mb-4">Sections</h1>
     <div id="section-list-container">{% include "book_tracker/sections/_list.html" %}</div>
 {% endblock content %}
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <script>
+        (function() {
+            function initSectionSortables(content) {
+                if (typeof Sortable === "undefined") {
+                    return;
+                }
+
+                var scope = content || document;
+                var sortables = [];
+
+                if (scope.matches && scope.matches(".sortable")) {
+                    sortables.push(scope);
+                }
+
+                sortables = sortables.concat(Array.prototype.slice.call(scope.querySelectorAll(".sortable")));
+
+                for (var i = 0; i < sortables.length; i++) {
+                    var sortable = sortables[i];
+                    if (sortable.dataset.sortableReady === "true") {
+                        continue;
+                    }
+
+                    new Sortable(sortable, {
+                        animation: 150,
+                        draggable: "[data-sortable-section]",
+                        handle: ".section-drag-handle",
+                        ghostClass: "bg-primary-subtle",
+                        chosenClass: "bg-body-secondary",
+                        filter: "a, button, input, select, textarea",
+                        preventOnFilter: false
+                    });
+                    sortable.dataset.sortableReady = "true";
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                initSectionSortables(document);
+            });
+
+            document.body.addEventListener("htmx:load", function(event) {
+                initSectionSortables(event.detail.elt);
+            });
+        })();
+    </script>
+{% endblock extra_js %}

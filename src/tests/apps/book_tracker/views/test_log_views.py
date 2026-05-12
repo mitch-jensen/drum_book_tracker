@@ -74,7 +74,7 @@ class TestPracticeLogCrudViews:
         assert success["HX-Reswap"] == "innerHTML"
         assert success["HX-Trigger"] == "logCreated"
         assert PracticeLog.objects.filter(exercise=exercise, tempo=110).exists()
-        assert invalid.status_code == HTTPStatus.OK
+        assert invalid.status_code == HTTPStatus.BAD_REQUEST
         assert b"This field is required." in invalid.content
 
     def test_row_edit_and_update_paths(self, client: Client) -> None:
@@ -119,5 +119,5 @@ class TestPracticeLogCrudViews:
         assert b"edit-exercise-" in edit_response.content
         assert update_success.status_code == HTTPStatus.OK
         assert log.tempo == 120
-        assert update_error.status_code == HTTPStatus.OK
+        assert update_error.status_code == HTTPStatus.BAD_REQUEST
         assert b"This field is required." in update_error.content

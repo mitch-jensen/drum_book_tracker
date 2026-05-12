@@ -1,0 +1,54 @@
+<form id="quick-log-inline-form"
+      method="post"
+      hx-post="{% url 'exercise-quick-log' exercise.pk %}"
+      hx-target="#quick-log-form"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="exercise" value="{{ exercise.pk }}">
+    <input type="hidden" name="section" value="{{ exercise.section.pk }}">
+    <input type="hidden" name="book" value="{{ exercise.section.book.pk }}">
+    <div class="row g-2 align-items-end">
+        <div class="col-auto">
+            <label for="id_practiced_on" class="form-label">Date</label>
+            <input type="date"
+                   name="practiced_on"
+                   id="id_practiced_on"
+                   value="{{ form.practiced_on.value|default_if_none:'' }}"
+                   class="form-control{% if form.practiced_on.errors %} is-invalid{% endif %}"
+                   required>
+            {% for error in form.practiced_on.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-auto">
+            <label for="id_tempo" class="form-label">Tempo</label>
+            <input type="number"
+                   name="tempo"
+                   id="id_tempo"
+                   value="{{ form.tempo.value|default_if_none:'' }}"
+                   class="form-control{% if form.tempo.errors %} is-invalid{% endif %}"
+                   required>
+            {% for error in form.tempo.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-auto">
+            <label for="id_difficulty" class="form-label">Difficulty</label>
+            {{ form.difficulty }}
+            {{ form.difficulty.errors }}
+        </div>
+        <div class="col-auto">
+            <label for="id_relaxation_level" class="form-label">Relaxation</label>
+            {{ form.relaxation_level }}
+            {{ form.relaxation_level.errors }}
+        </div>
+        <div class="col-auto">
+            <label for="id_notes" class="form-label">Notes</label>
+            <input type="text"
+                   name="notes"
+                   id="id_notes"
+                   value="{{ form.notes.value|default_if_none:'' }}"
+                   class="form-control{% if form.notes.errors %} is-invalid{% endif %}">
+            {% for error in form.notes.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-auto align-self-end">
+            <button type="submit" class="btn btn-primary">Log This</button>
+        </div>
+    </div>
+</form>

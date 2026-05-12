@@ -1,0 +1,27 @@
+<tr id="author-{{ author.pk }}">
+    <td colspan="3">
+        <form hx-post="{% url 'author-update' author.pk %}"
+              hx-target="#author-table-body"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="row g-2 align-items-start">
+                <div class="col">
+                    {{ form.first_name }}
+                    {{ form.first_name.errors }}
+                </div>
+                <div class="col">
+                    {{ form.last_name }}
+                    {{ form.last_name.errors }}
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            hx-get="{% url 'author-row' author.pk %}"
+                            hx-target="#author-{{ author.pk }}"
+                            hx-swap="outerHTML">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </td>
+</tr>

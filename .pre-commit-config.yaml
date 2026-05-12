@@ -68,6 +68,7 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        exclude: "e2e/pnpm-lock.yaml|skills-lock.json|.agents/"
   - repo: https://github.com/adamchainz/django-upgrade
     rev: 1.30.0
     hooks:

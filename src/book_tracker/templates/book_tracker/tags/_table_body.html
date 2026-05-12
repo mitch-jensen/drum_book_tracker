@@ -1,0 +1,9 @@
+{% if tags %}
+    {% for tag in tags %}
+        {% include "book_tracker/tags/_row.html" %}
+    {% endfor %}
+{% else %}
+    <tr id="no-tags-row">
+        <td colspan="2" class="text-center text-muted py-4">No tags yet.</td>
+    </tr>
+{% endif %}

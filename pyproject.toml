@@ -23,13 +23,13 @@ dev = [
     "djlint>=1.36.4",
     "identify>=2.6.19",
     "pre-commit>=4.6.0",
-    "pyrefly>=0.62.0",
     "ruff>=0.15.11",
 ]
 test = [
     "factory-boy>=3.3.3",
     "playwright>=1.58.0",
     "pytest>=9.0.3",
+    "pyrefly>=0.62.0",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.12.0",
     "pytest-playwright>=0.7.0",
@@ -42,7 +42,7 @@ line-length = 180
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D103", "D104", "D105"]
+ignore = ["D100", "D101", "D103", "D104", "D105", "D203", "D212", "COM812"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.extend-per-file-ignores]
@@ -57,10 +57,6 @@ fixable = ["ALL"]
     "D102",    # Docstrings for test functions are not necessary.
     "D106",    # Docstrings for test classes are not necessary.
 ]
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "core.settings_local_test"
-pythonpath = ["src"]
 
 [tool.bandit]
 exclude_dirs = ["src/tests"]
@@ -77,3 +73,10 @@ project-excludes = [
     ".venv",
 ]
 infer-with-first-use = false
+
+[tool.djlint]
+profile = "django"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings_local"
+pythonpath = ["src"]

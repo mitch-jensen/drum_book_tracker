@@ -25,12 +25,18 @@ class TestExerciseBulkCreateGet:
         assert b"Bulk Create Exercises" in response.content
 
     def test_contains_form_fields(self, client: Client) -> None:
+        SectionFactory.create(start_page=10, end_page=12)
+
         response = client.get(reverse("exercise-bulk-create"))
 
         assert b"id_section" in response.content
+        assert b'data-start-page="10"' in response.content
+        assert b'data-end-page="12"' in response.content
         assert b"id_start" in response.content
         assert b"id_end" in response.content
         assert b"id_tags" in response.content
+        assert b"initExerciseBulkCreate" in response.content
+        assert b"exercise-page-range-error" in response.content
 
     def test_contains_page_range_row(self, client: Client) -> None:
         response = client.get(reverse("exercise-bulk-create"))
@@ -42,7 +48,7 @@ class TestExerciseBulkCreateGet:
 
 class TestExerciseBulkCreatePost:
     def test_creates_exercises(self, client: Client) -> None:
-        section = SectionFactory.create()
+        section = SectionFactory.create(start_page=10, end_page=14)
 
         response = client.post(
             reverse("exercise-bulk-create"),
@@ -61,6 +67,74 @@ class TestExerciseBulkCreatePost:
         for i in range(1, 6):
             ex = Exercise.objects.get(section=section, identifier=str(i))
             assert ex.page_number == 10
+
+    def test_creates_lettered_exercises(self, client: Client) -> None:
+        section: Section = SectionFactory.create()
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": "A",
+                "end": "D",
+                "range_start": ["A"],
+                "range_end": ["D"],
+                "range_page": ["10"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.FOUND
+        assert list(Exercise.objects.filter(section=section).order_by("identifier").values_list("identifier", flat=True)) == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+
+    def test_creates_roman_numeral_exercises(self, client: Client) -> None:
+        section: Section = SectionFactory.create()
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": "I",
+                "end": "IV",
+                "range_start": ["I"],
+                "range_end": ["IV"],
+                "range_page": ["12"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.FOUND
+        assert list(Exercise.objects.filter(section=section).order_by("page_number", "identifier").values_list("identifier", flat=True)) == [
+            "I",
+            "II",
+            "III",
+            "IV",
+        ]
+
+    def test_creates_compound_letter_suffix_exercises(self, client: Client) -> None:
+        section: Section = SectionFactory.create()
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": "1a",
+                "end": "1c",
+                "range_start": ["1a"],
+                "range_end": ["1c"],
+                "range_page": ["14"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.FOUND
+        assert list(Exercise.objects.filter(section=section).order_by("identifier").values_list("identifier", flat=True)) == [
+            "1a",
+            "1b",
+            "1c",
+        ]
 
     def test_creates_exercises_with_multiple_page_ranges(self, client: Client) -> None:
         section: Section = SectionFactory.create()
@@ -81,6 +155,25 @@ class TestExerciseBulkCreatePost:
         assert Exercise.objects.filter(section=section).count() == 10
         assert Exercise.objects.get(section=section, identifier="3").page_number == 20
         assert Exercise.objects.get(section=section, identifier="8").page_number == 21
+
+    def test_applies_page_ranges_to_lettered_exercises(self, client: Client) -> None:
+        section: Section = SectionFactory.create()
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": "A",
+                "end": "D",
+                "range_start": ["A", "C"],
+                "range_end": ["B", "D"],
+                "range_page": ["20", "21"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.FOUND
+        assert Exercise.objects.get(section=section, identifier="B").page_number == 20
+        assert Exercise.objects.get(section=section, identifier="D").page_number == 21
 
     def test_applies_tags_to_all_exercises(self, client: Client) -> None:
         section: Section = SectionFactory.create()
@@ -220,6 +313,25 @@ class TestExerciseBulkCreatePost:
 
         assert response.status_code == HTTPStatus.OK
         assert b"all fields are required" in response.content
+        assert Exercise.objects.count() == 0
+
+    def test_page_ranges_must_fit_within_selected_section_page_span(self, client: Client) -> None:
+        section: Section = SectionFactory.create(start_page=10, end_page=12)
+
+        response = client.post(
+            reverse("exercise-bulk-create"),
+            {
+                "section": section.pk,
+                "start": 1,
+                "end": 3,
+                "range_start": ["1"],
+                "range_end": ["3"],
+                "range_page": ["13"],
+            },
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert b"Page number must be between 10 and 12" in response.content
         assert Exercise.objects.count() == 0
 
 

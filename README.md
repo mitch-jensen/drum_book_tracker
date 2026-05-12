@@ -90,7 +90,7 @@ Run the test suite locally (fast path, no Docker):
 uv run pytest
 ```
 
-Local pytest uses `core.settings_local_test`, which stores test data in
+Local pytest uses `core.settings_local`, which stores test data in
 `src/db_test.sqlite3` and does not require PostgreSQL.
 
 Run the test suite in Docker (matches CI):

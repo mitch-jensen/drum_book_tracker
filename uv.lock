@@ -308,12 +308,12 @@ dev = [
     { name = "djlint" },
     { name = "identify" },
     { name = "pre-commit" },
-    { name = "pyrefly" },
     { name = "ruff" },
 ]
 test = [
     { name = "factory-boy" },
     { name = "playwright" },
+    { name = "pyrefly" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
@@ -340,12 +340,12 @@ dev = [
     { name = "djlint", specifier = ">=1.36.4" },
     { name = "identify", specifier = ">=2.6.19" },
     { name = "pre-commit", specifier = ">=4.6.0" },
-    { name = "pyrefly", specifier = ">=0.62.0" },
     { name = "ruff", specifier = ">=0.15.11" },
 ]
 test = [
     { name = "factory-boy", specifier = ">=3.3.3" },
     { name = "playwright", specifier = ">=1.58.0" },
+    { name = "pyrefly", specifier = ">=0.62.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-django", specifier = ">=4.12.0" },

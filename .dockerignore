@@ -47,6 +47,7 @@ db.sqlite3
 .coverage
 .pytest_cache/
 htmlcov/
+e2e/
 
 # Environment
 .env

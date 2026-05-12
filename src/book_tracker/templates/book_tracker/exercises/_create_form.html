@@ -1,0 +1,40 @@
+<form hx-post="{% url 'exercise-create' %}"
+      hx-target="#exercise-create-form"
+      hx-swap="innerHTML"
+      hx-disabled-elt="find button[type='submit']">
+    {% csrf_token %}
+    <div class="row g-2 align-items-start mb-3">
+        <div class="col">
+            <label for="{{ form.section.id_for_label }}" class="form-label">Section</label>
+            {{ form.section }}
+            {{ form.section.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.identifier.id_for_label }}" class="form-label">Identifier</label>
+            {{ form.identifier }}
+            {{ form.identifier.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.page_number.id_for_label }}" class="form-label">Page</label>
+            {{ form.page_number }}
+            {{ form.page_number.errors }}
+        </div>
+        <div class="col">
+            <label for="{{ form.tags.id_for_label }}" class="form-label">Tags</label>
+            {{ form.tags }}
+            {{ form.tags.errors }}
+        </div>
+        <div class="col-auto align-self-end">
+            <button type="submit" class="btn btn-primary">Add Exercise</button>
+        </div>
+    </div>
+    <p>
+        <a href="{% url 'exercise-bulk-create' %}"
+           class="btn btn-outline-secondary btn-sm">Bulk Create</a>
+    </p>
+</form>
