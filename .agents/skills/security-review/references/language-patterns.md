@@ -118,8 +118,8 @@ DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 // Missing: dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
 
 // Deserialization
-ObjectInputStream ois = new ObjectInputStream(inputStream);
-Object obj = ois.readObject();  // only safe with allowlist
+ObjectInputStream is = new ObjectInputStream(inputStream);
+Object obj = is.readObject();  // only safe with allowlist
 
 // Spring Security — permitAll on sensitive endpoint
 .antMatchers("/admin/**").permitAll()
