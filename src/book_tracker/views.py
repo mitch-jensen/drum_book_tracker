@@ -93,7 +93,7 @@ def author_table_body(request: HtmxHttpRequest) -> HttpResponse:
 
 @require_GET
 @require_htmx
-def author_row(request: HtmxHttpRequest, pk: int) -> HttpResponse:
+def author_row(request: HtmxHttpRequest, pk: str) -> HttpResponse:
     author = get_object_or_404(Author, pk=pk)
     return render(request, "book_tracker/authors/_row.html", {"author": author})
 
