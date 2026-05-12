@@ -5,8 +5,8 @@ from book_tracker import htmx_crud_views, views
 urlpatterns = [
     path("authors/", views.author_list, name="author-list"),
     path("authors/create/", views.author_create, name="author-create"),
-    path("authors/<str:pk>/", views.author_row, name="author-row"),
     path("authors/table-body/", views.author_table_body, name="author-table-body"),
+    path("authors/<str:pk>/", views.author_row, name="author-row"),
     path("authors/<str:pk>/edit/", views.author_edit, name="author-edit"),
     path("authors/<str:pk>/update/", views.author_update, name="author-update"),
     path("authors/<str:pk>/delete/", views.author_delete, name="author-delete"),
