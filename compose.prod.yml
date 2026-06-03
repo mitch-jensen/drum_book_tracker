@@ -1,7 +1,7 @@
 ---
 services:
   caddy:
-    image: caddy:2.11.2-alpine
+    image: caddy:2.11.4-alpine
     restart: unless-stopped
     ports:
       - "127.0.0.1:80:80"
